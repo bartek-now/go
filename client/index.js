@@ -2,15 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-const state_pb = require('./state_pb.js');
-
 const loadGameState = (id) => {
   return new Promise(function(resolve, reject) {
     resolve(null);
   }) 
 }
 
-const saveGameState = (id, gameState) => {
+const saveGameState = (gameState) => {
   return new Promise(function(resolve, reject) {
     resolve();
   }).catch((reason) => alert('DB write failed ' + reason))
@@ -50,22 +48,22 @@ class Board extends React.Component {
 
     let size = parseInt(this.props.size);
 
-    let boardState = new state_pb.BoardState();
+    let boardState = [];
     for (let i = 0; i < size; i++) {
       // Recreate row for each iteration, to create a separate copy.
-      let row = new state_pb.BoardState.Row();
+      let row = [];
       for (let j = 0; j < size; j++) {
-        row.addCol(0);
+        row.push(0);
       }
-      boardState.addRow(row);
+      boardState.push(row);
     }
-    let gameState = new state_pb.GameState();
-    gameState.setId('123456');
-    gameState.setSize(size);
-    gameState.setResult(state_pb.GameState.Result.ONGOING);
-    gameState.addBoardState(boardState);
-    gameState.setBlackIsNext(true);
-
+    let gameState = {
+      id: '123456',
+      size: size,
+      status: "ONGOING",
+      boardStates: [boardState],
+      blackIsNext: true,
+    }
     this.initializeState(gameState);
   }
 
@@ -73,30 +71,32 @@ class Board extends React.Component {
     this.setState({
       gameState: gameState,
     });
-    saveGameState(gameState.getId(), gameState);
+    saveGameState(gameState);
   }
 
   handleClick(row, col) {
     var gameState = this.state.gameState;
     if (gameState == null) return;
-    var boardHistory = gameState.getBoardStateList();
-    var board = boardHistory[boardHistory.length - 1].cloneMessage();
-    if (board.getRowList()[row].getColList()[col]) return;
+    var boardHistory = gameState.boardStates;
+    var board = boardHistory[boardHistory.length - 1];
+    if (board[row][col]) return;
+    // Use a JSON trick to make a deep copy of the board, before modifying it.
+    board = JSON.parse(JSON.stringify(board));
 
-    board.getRowList()[row].getColList()[col] = gameState.getBlackIsNext() ? 1 : 2;
-    gameState.setBlackIsNext(!gameState.getBlackIsNext());
-    gameState.addBoardState(board);
+    board[row][col] = gameState.blackIsNext ? 1 : 2;
+    gameState.blackIsNext = !gameState.blackIsNext;
+    gameState.boardStates.push(board);
     this.setState({
       gameState: gameState,
     });
-    saveGameState(gameState.getId(), gameState);
+    saveGameState(gameState);
   }
 
   renderSquare(row, col) {
     var gameState = this.state.gameState;
-    var boardHistory = gameState.getBoardStateList();
+    var boardHistory = gameState.boardStates;
     var board = boardHistory[boardHistory.length - 1];
-    let char = ["", "B", "W"][board.getRowList()[row].getColList()[col]];
+    let char = ["", "B", "W"][board[row][col]];
     return <Square value={char} onClick={() => this.handleClick(row, col)} />;
   }
 
@@ -119,7 +119,7 @@ class Board extends React.Component {
   render() {
     let status;
     if (this.state.gameState == null) return null;
-    status = 'Next player: ' + (this.state.gameState.getBlackIsNext() ? 'B' : 'W');
+    status = 'Next player: ' + (this.state.gameState.blackIsNext ? 'B' : 'W');
 
     return (
       <div>
@@ -135,7 +135,7 @@ class Game extends React.Component {
     return (
       <div className="game">
         <div className="game-board">
-          <Board size="7" />
+          <Board size="2" />
         </div>
         <div className="game-info">
           <div>{/* status */}</div>

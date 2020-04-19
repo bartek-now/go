@@ -4,7 +4,9 @@ import './index.css';
 
 const loadGameState = async (id) => {
   const response = await fetch('/api/load');
-  const body = await response.json();
+  const body_text = await response.text()
+  console.log(body_text);
+  const body = JSON.parse(body_text);
   if (response.status !== 200) throw Error('Received status ' + response.status + ": " + body.message);
   return body.gameState ? body.gameState : null;
 }

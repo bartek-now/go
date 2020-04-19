@@ -36,10 +36,9 @@ class Board extends React.Component {
       gameState: null,
     };
 
-    let promise = loadGameState('123456');
-    promise
-        .then((gameState) => this.initializeStateFromDb(gameState))
-        .catch((reason) => this.initializeFreshState(reason));
+    loadGameState('123456')
+        .then(gameState => this.initializeStateFromDb(gameState))
+        .catch(reason => this.initializeFreshState(reason));
   }
 
   initializeStateFromDb(gameState) {

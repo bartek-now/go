@@ -4,40 +4,16 @@ import './index.css';
 
 const state_pb = require('./state_pb.js');
 
-// This was needed to avoid pg-native issue.
-// https://github.com/serverless-heaven/serverless-webpack/issues/78#issuecomment-271336996
-const Pool = require('pg').Pool
-
-// TODO: Don't show the password to the entire world!
-const pool = new Pool({
-  user: 'zkmzsgqmovqbrv',
-  host: 'ec2-54-152-175-141.compute-1.amazonaws.com',
-  database: 'd131oid7lp7bhj',
-  password: 'fce9deec2a53dac7b9bb8661198e3379a33daa2c3a29b9b219d6f43f5e679eda',
-  port: 5432,
-});
-
 const loadGameState = (id) => {
   return new Promise(function(resolve, reject) {
-    // TODO: Don't make SQL injection that easy!
-    pool.query('SELECT State FROM Games WHERE id=$1', [id], (error, results) => {
-      if (error) {
-        reject(error)
-      }
-      resolve(results.rows[0]);
-    })
+    resolve(null);
   }) 
 }
 
 const saveGameState = (id, gameState) => {
   return new Promise(function(resolve, reject) {
-    pool.query('INSERT INTO Games (name, email) VALUES ($1, $2) RETURNING *', [id, gameState.serializeBinary()], (error, results) => {
-      if (error) {
-        reject(error)
-      }
-      resolve(`Game state has been saved: ${results.rows[0]}`)
-    })
-  }).then(() => alert('DB write succeeded')).catch((reason) => alert('DB write failed ' + reason))
+    resolve();
+  }).catch((reason) => alert('DB write failed ' + reason))
 }
 
 function Square(props) {
@@ -56,15 +32,22 @@ class Board extends React.Component {
     };
 
     let promise = loadGameState('123456');
-    promise.then((gameState) => this.initializeStateFromDb(gameState)).catch((reason) => setTimeout(() => this.initializeFreshState(reason), 3000));
+    promise
+        .then((gameState) => this.initializeStateFromDb(gameState))
+        .catch((reason) => this.initializeFreshState(reason));
   }
 
   initializeStateFromDb(gameState) {
-    alert('Loading from DB: ' + gameState);
+    if (gameState) {
+      this.initializeState(gameState);
+    } else {
+      gameState = this.initializeFreshState(null);
+    }
   }
 
   initializeFreshState(reason) {
-    alert('Failed to load from DB: ' + reason);
+    if (reason) alert('Failed to load from DB: ' + reason);
+
     let size = parseInt(this.props.size);
 
     let boardState = new state_pb.BoardState();
@@ -83,6 +66,10 @@ class Board extends React.Component {
     gameState.addBoardState(boardState);
     gameState.setBlackIsNext(true);
 
+    this.initializeState(gameState);
+  }
+
+  initializeState(gameState) {
     this.setState({
       gameState: gameState,
     });

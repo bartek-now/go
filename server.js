@@ -42,13 +42,16 @@ const port = process.env.PORT || 5000;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.get('/api/hello', (req, res) => {
-  res.send({ express: 'Hello From Express' });
+var saved = {};
+
+app.get('/api/load', (req, res) => {
+  res.send(saved);
 });
 
-app.post('/api/world', (req, res) => {
+app.post('/api/save', (req, res) => {
   console.log(req.body);
-  res.send(req.body);
+  saved = {gameState: req.body};
+  res.send({status: "OK"});
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));

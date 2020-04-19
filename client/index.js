@@ -2,16 +2,23 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-const loadGameState = (id) => {
-  return new Promise(function(resolve, reject) {
-    resolve(null);
-  }) 
+const loadGameState = async (id) => {
+  const response = await fetch('/api/load');
+  const body = await response.json();
+  if (response.status !== 200) throw Error('Received status ' + response.status + ": " + body.message);
+  return body.gameState ? body.gameState : null;
 }
 
-const saveGameState = (gameState) => {
-  return new Promise(function(resolve, reject) {
-    resolve();
-  }).catch((reason) => alert('DB write failed ' + reason))
+const saveGameState = async (gameState) => {
+  const response = await fetch('/api/save', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(gameState),
+  });
+  const body = await response.json();
+  if (response.status !== 200) throw Error('Received status ' + response.status + ": " + body.message);
 }
 
 function Square(props) {
@@ -37,7 +44,9 @@ class Board extends React.Component {
 
   initializeStateFromDb(gameState) {
     if (gameState) {
-      this.initializeState(gameState);
+      this.setState({
+        gameState: gameState,
+      });
     } else {
       gameState = this.initializeFreshState(null);
     }
@@ -64,10 +73,7 @@ class Board extends React.Component {
       boardStates: [boardState],
       blackIsNext: true,
     }
-    this.initializeState(gameState);
-  }
 
-  initializeState(gameState) {
     this.setState({
       gameState: gameState,
     });
@@ -135,7 +141,7 @@ class Game extends React.Component {
     return (
       <div className="game">
         <div className="game-board">
-          <Board size="2" />
+          <Board size="3" />
         </div>
         <div className="game-info">
           <div>{/* status */}</div>

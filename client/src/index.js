@@ -65,14 +65,6 @@ class Board extends React.Component {
     let size = 15;
 
     let boardState = [];
-    for (let i = 0; i < size; i++) {
-      // Recreate row for each iteration, to create a separate copy.
-      let row = [];
-      for (let j = 0; j < size; j++) {
-        row.push(0);
-      }
-      boardState.push(row);
-    }
     let gameState = {
       id: this.props.id,
       size: size,
@@ -87,16 +79,27 @@ class Board extends React.Component {
     saveGameState(gameState);
   }
 
+  getField(board, row, col) {
+    // If row is undefined, assume all its fields are undefined.
+    return !board[row] ? 0 : (!board[row][col] ? 0 : board[row][col]);
+  }
+
+  setField(board, row, col, val) {
+    // If row is undefined, assume all its fields are undefined.
+    if (!board[row]) board[row] = [];
+    board[row][col] = val;
+  }
+
   handleClick(row, col) {
     var gameState = this.state.gameState;
     if (gameState == null) return;
     var boardHistory = gameState.boardStates;
     var board = boardHistory[boardHistory.length - 1];
-    if (board[row][col]) return;
+    if (this.getField(board, row, col)) return;
     // Use a JSON trick to make a deep copy of the board, before modifying it.
     board = JSON.parse(JSON.stringify(board));
 
-    board[row][col] = gameState.blackIsNext ? 1 : 2;
+    this.setField(board, row, col, gameState.blackIsNext ? 1 : 2);
     gameState.blackIsNext = !gameState.blackIsNext;
     gameState.boardStates.push(board);
     this.setState({
@@ -108,7 +111,7 @@ class Board extends React.Component {
   renderSquare(row, col) {
     var boardHistory = this.state.gameState.boardStates;
     var board = boardHistory[boardHistory.length - 1];
-    let char = ["", "B", "W"][board[row][col]];
+    let char = ["", "B", "W"][this.getField(board, row, col)];
     return <Square value={char} onClick={() => this.handleClick(row, col)} />;
   }
 

@@ -1,5 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  useParams
+} from "react-router-dom";
 import './index.css';
 
 const loadGameState = async (id) => {
@@ -137,10 +143,11 @@ class Board extends React.Component {
   }
 }
 
-class Game extends React.Component {
-  render() {
-    return (
+function Game() {
+  let { id } = useParams();
+  return (
       <div className="game">
+        ID: {id}
         <div className="game-board">
           <Board size="14" />
         </div>
@@ -150,12 +157,23 @@ class Game extends React.Component {
         </div>
       </div>
     );
-  }
 }
 
 // ========================================
 
+function App() {
+  return (
+    <Router>
+      <Switch>
+        <Route exact path="/:id">
+          <Game />
+        </Route>
+      </Switch>
+    </Router>
+  );
+}
+
 ReactDOM.render(
-  <Game />,
+  <App />,
   document.getElementById('root')
 );

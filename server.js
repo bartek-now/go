@@ -2,7 +2,6 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 
-/*
 // This was needed to avoid pg-native issue.
 // https://github.com/serverless-heaven/serverless-webpack/issues/78#issuecomment-271336996
 const Pool = require('pg').Pool
@@ -14,30 +13,39 @@ const pool = new Pool({
   database: 'd131oid7lp7bhj',
   password: 'fce9deec2a53dac7b9bb8661198e3379a33daa2c3a29b9b219d6f43f5e679eda',
   port: 5432,
+  ssl: {
+    rejectUnauthorized: false,
+  }
 });
 
-const loadGameState = (id) => {
+const loadGameStateFromDb = (id) => {
   return new Promise(function(resolve, reject) {
-    pool.query('SELECT State FROM Games WHERE id=$1', [id], (error, results) => {
+    pool.query('SELECT state FROM Games WHERE id=$1::text', [id], (error, result) => {
       if (error) {
         reject(error)
+        return;
       }
-      resolve(results.rows[0]);
+      if (!result.rows[0]) {
+        resolve(null);
+        return;
+      }
+      console.log(result);
+      resolve(JSON.parse(result.rows[0].state));
     })
   }) 
 }
 
-const saveGameState = (id, gameState) => {
+const saveGameStateToDb = (id, gameState) => {
   return new Promise(function(resolve, reject) {
-    pool.query('INSERT INTO Games (name, email) VALUES ($1, $2) RETURNING *', [id, gameState.serializeBinary()], (error, results) => {
+    pool.query('INSERT INTO Games (id, state) VALUES ($1::text, $2::text) ON CONFLICT(id) DO UPDATE SET state=$2::text', [id, gameState], (error) => {
       if (error) {
         reject(error)
+        return;
       }
-      resolve(`Game state has been saved: ${results.rows[0]}`)
+      resolve();
     })
-  }).then(() => alert('DB write succeeded')).catch((reason) => alert('DB write failed ' + reason))
+  })
 }
-*/
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -45,19 +53,35 @@ const port = process.env.PORT || 5000;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-var savedGames = {};
-
 app.get('/api/load/:id', (req, res) => {
   console.log("Loading game ID: ", req.params.id);
-  let gameState = savedGames[req.params.id];
-  if (!gameState) gameState = {nothing: "there"};
-  res.send(gameState);
+  loadGameStateFromDb(req.params.id)
+      .then(gameState => {
+        if (gameState) {
+          console.log("Successfully read state from DB: ", gameState);
+          res.send({gameState: gameState});
+        } else{
+          console.log("No read state from DB");
+          res.status(204).send("game not found");
+        }
+      })
+      .catch(reason => {
+        console.log("Failure when reading state from DB: ", reason);
+        res.status(500).send(reason);
+      });
 });
 
 app.post('/api/save/:id', (req, res) => {
   console.log("Saving game ID: ", req.params.id, "\n", req.body);
-  savedGames[req.params.id] = {gameState: req.body};
-  res.send({status: "OK"});
+  saveGameStateToDb(req.params.id, req.body)
+      .then(() => {
+        console.log("Successfully wrote state to DB");
+        res.send("OK");
+      })
+      .catch(reason => {
+        console.log("Failure when writing state from DB: ", reason);
+        res.status(500).send(reason);
+      });
 });
 
 if (process.env.NODE_ENV === 'production') {

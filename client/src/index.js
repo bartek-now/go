@@ -142,7 +142,7 @@ class Game extends React.Component {
     return (
       <div className="game">
         <div className="game-board">
-          <Board size="9" />
+          <Board size="11" />
         </div>
         <div className="game-info">
           <div>{/* status */}</div>

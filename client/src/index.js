@@ -9,7 +9,7 @@ import {
 import './index.css';
 
 const loadGameState = async (id) => {
-  const response = await fetch('/api/load');
+  const response = await fetch('/api/load/' + id);
   const body_text = await response.text()
   console.log(body_text);
   const body = JSON.parse(body_text);
@@ -18,7 +18,7 @@ const loadGameState = async (id) => {
 }
 
 const saveGameState = async (gameState) => {
-  const response = await fetch('/api/save', {
+  const response = await fetch('/api/save/' + gameState.id, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ class Board extends React.Component {
       gameState: null,
     };
 
-    loadGameState('123456')
+    loadGameState(props.id)
         .then(gameState => this.initializeStateFromDb(gameState))
         .catch(reason => this.initializeFreshState(reason));
   }
@@ -62,7 +62,7 @@ class Board extends React.Component {
   initializeFreshState(reason) {
     if (reason) alert('Failed to load from DB: ' + reason);
 
-    let size = parseInt(this.props.size);
+    let size = 15;
 
     let boardState = [];
     for (let i = 0; i < size; i++) {
@@ -74,7 +74,7 @@ class Board extends React.Component {
       boardState.push(row);
     }
     let gameState = {
-      id: '123456',
+      id: this.props.id,
       size: size,
       status: "ONGOING",
       boardStates: [boardState],
@@ -106,8 +106,7 @@ class Board extends React.Component {
   }
 
   renderSquare(row, col) {
-    var gameState = this.state.gameState;
-    var boardHistory = gameState.boardStates;
+    var boardHistory = this.state.gameState.boardStates;
     var board = boardHistory[boardHistory.length - 1];
     let char = ["", "B", "W"][board[row][col]];
     return <Square value={char} onClick={() => this.handleClick(row, col)} />;
@@ -115,7 +114,7 @@ class Board extends React.Component {
 
   renderRow(row) {
     let arr = []
-    for (let i = 0; i < this.props.size; i++) {
+    for (let i = 0; i < this.state.gameState.size; i++) {
       arr.push(this.renderSquare(row, i));
     }
     return React.createElement("div", {className:"board-row"}, ...arr);
@@ -123,15 +122,16 @@ class Board extends React.Component {
 
   renderAllRows() {
     let arr = []
-    for (let i = 0; i < this.props.size; i++) {
+    for (let i = 0; i < this.state.gameState.size; i++) {
       arr.push(this.renderRow(i));
     }
     return React.createElement("div", null, ...arr);
   }
 
   render() {
-    let status;
     if (this.state.gameState == null) return null;
+
+    let status;
     status = 'Next player: ' + (this.state.gameState.blackIsNext ? 'B' : 'W');
 
     return (
@@ -147,13 +147,8 @@ function Game() {
   let { id } = useParams();
   return (
       <div className="game">
-        ID: {id}
         <div className="game-board">
-          <Board size="14" />
-        </div>
-        <div className="game-info">
-          <div>{/* status */}</div>
-          <ol>{/* TODO */}</ol>
+          <Board id={id} />
         </div>
       </div>
     );

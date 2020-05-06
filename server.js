@@ -45,15 +45,18 @@ const port = process.env.PORT || 5000;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-var saved = {nothing: "there"};
+var savedGames = {};
 
-app.get('/api/load', (req, res) => {
-  res.send(saved);
+app.get('/api/load/:id', (req, res) => {
+  console.log("Loading game ID: ", req.params.id);
+  let gameState = savedGames[req.params.id];
+  if (!gameState) gameState = {nothing: "there"};
+  res.send(gameState);
 });
 
-app.post('/api/save', (req, res) => {
-  console.log(req.body);
-  saved = {gameState: req.body};
+app.post('/api/save/:id', (req, res) => {
+  console.log("Saving game ID: ", req.params.id, "\n", req.body);
+  savedGames[req.params.id] = {gameState: req.body};
   res.send({status: "OK"});
 });
 

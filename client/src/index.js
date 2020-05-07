@@ -8,17 +8,28 @@ import {
 } from "react-router-dom";
 import './index.css';
 
-const loadGameState = async (id) => {
-  const response = await fetch('/api/load/' + id);
-  const body_text = await response.text()
-  console.log(body_text);
-  const body = JSON.parse(body_text);
+
+const loadGame = async (playerId) => {
+  const response = await fetch('/api/load/' + playerId);
+  const body = await response.json()
   if (response.status !== 200) throw Error('Received status ' + response.status + ": " + body.message);
-  return body.gameState ? body.gameState : null;
+  return body;
 }
 
-const saveGameState = async (gameState) => {
-  const response = await fetch('/api/save/' + gameState.id, {
+const saveGame = async (gameInfo) => {
+  const response = await fetch('/api/save/' + gameInfo.gameId, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(gameInfo.gameState),
+  });
+  const body = await response.json();
+  if (response.status !== 200) throw Error('Received status ' + response.status + ": " + body.message);
+}
+
+const saveFreshGame = async (gameState) => {
+  const response = await fetch('/api/new/', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -27,6 +38,7 @@ const saveGameState = async (gameState) => {
   });
   const body = await response.json();
   if (response.status !== 200) throw Error('Received status ' + response.status + ": " + body.message);
+  return body;
 }
 
 function Square(props) {
@@ -44,39 +56,13 @@ class Board extends React.Component {
       gameState: null,
     };
 
-    loadGameState(props.id)
-        .then(gameState => this.initializeStateFromDb(gameState))
-        .catch(reason => this.initializeFreshState(reason));
+    loadGame(props.playerId)
+        .then(gameInfo => this.initializeStateFromDb(gameInfo))
+        .catch(reason => alert('Failed to load the game from DB: ' + reason));
   }
 
-  initializeStateFromDb(gameState) {
-    if (gameState) {
-      this.setState({
-        gameState: gameState,
-      });
-    } else {
-      gameState = this.initializeFreshState(null);
-    }
-  }
-
-  initializeFreshState(reason) {
-    if (reason) alert('Failed to load from DB: ' + reason);
-
-    let size = 15;
-
-    let boardState = [];
-    let gameState = {
-      id: this.props.id,
-      size: size,
-      status: "ONGOING",
-      boardStates: [boardState],
-      blackIsNext: true,
-    }
-
-    this.setState({
-      gameState: gameState,
-    });
-    saveGameState(gameState);
+  initializeStateFromDb(gameInfo) {
+    this.setState(gameInfo);
   }
 
   getField(board, row, col) {
@@ -91,10 +77,11 @@ class Board extends React.Component {
   }
 
   handleClick(row, col) {
-    var gameState = this.state.gameState;
+    let gameInfo = this.state;
+    let gameState = gameInfo.gameState;
     if (gameState == null) return;
-    var boardHistory = gameState.boardStates;
-    var board = boardHistory[boardHistory.length - 1];
+    let boardHistory = gameState.boardStates;
+    let board = boardHistory[boardHistory.length - 1];
     if (this.getField(board, row, col)) return;
     // Use a JSON trick to make a deep copy of the board, before modifying it.
     board = JSON.parse(JSON.stringify(board));
@@ -102,10 +89,8 @@ class Board extends React.Component {
     this.setField(board, row, col, gameState.blackIsNext ? 1 : 2);
     gameState.blackIsNext = !gameState.blackIsNext;
     gameState.boardStates.push(board);
-    this.setState({
-      gameState: gameState,
-    });
-    saveGameState(gameState);
+    this.setState(gameInfo);
+    saveGame(gameInfo);
   }
 
   renderSquare(row, col) {
@@ -134,9 +119,7 @@ class Board extends React.Component {
   render() {
     if (this.state.gameState == null) return null;
 
-    let status;
-    status = 'Next player: ' + (this.state.gameState.blackIsNext ? 'B' : 'W');
-
+    let status = 'Next player: ' + (this.state.gameState.blackIsNext ? 'B' : 'W');
     return (
       <div>
         <div className="status">{status}</div>
@@ -147,14 +130,56 @@ class Board extends React.Component {
 }
 
 function Game() {
-  let { id } = useParams();
+  let { playerId } = useParams();
   return (
       <div className="game">
         <div className="game-board">
-          <Board id={id} />
+          <Board playerId={playerId} />
         </div>
       </div>
     );
+}
+
+class NewGame extends React.Component {
+  constructor(props) {
+    super(props);
+
+    saveFreshGame(this.constructFreshState(9))
+        .then(ids => this.setState(ids))
+        .catch(reason => alert('Failed to initialize a game: ' + reason));
+  }
+
+  constructFreshState(size) {
+    let boardHistory = [];
+    let gameState = {
+      size: size,
+      status: "ONGOING",
+      boardStates: [boardHistory],
+      blackIsNext: true,
+    }
+    return gameState;
+  }
+
+  render() {
+    if (!this.state) return null;
+
+    let isBlack = Math.random() < 0.5;
+    let playerHref = "/" + (isBlack ? this.state.blackPlayerId : this.state.whitePlayerId);
+    let opponentHref = "/" + (isBlack ? this.state.whitePlayerId : this.state.blackPlayerId);
+    return (
+      <div className="game">
+        Game ID: {this.state.gameId}
+        <br/>
+        White ID: {this.state.whitePlayerId}
+        <br/>
+        Black ID: {this.state.blackPlayerId}
+        <br/>
+        <a href={playerHref}>Your game link</a>
+        <br/>
+        <a href={opponentHref}>Opponent's game link</a>
+      </div>
+    );
+  }
 }
 
 // ========================================
@@ -163,7 +188,10 @@ function App() {
   return (
     <Router>
       <Switch>
-        <Route exact path="/:id">
+        <Route exact path="/new">
+          <NewGame />
+        </Route>
+        <Route exact path="/:playerId">
           <Game />
         </Route>
       </Switch>

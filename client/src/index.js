@@ -52,9 +52,6 @@ function Square(props) {
 class Board extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      gameState: null,
-    };
 
     loadGame(props.playerId)
         .then(gameInfo => this.initializeStateFromDb(gameInfo))
@@ -79,7 +76,8 @@ class Board extends React.Component {
   handleClick(row, col) {
     let gameInfo = this.state;
     let gameState = gameInfo.gameState;
-    if (gameState == null) return;
+    if (gameState.blackIsNext !== gameInfo.isBlack) return;
+
     let boardHistory = gameState.boardStates;
     let board = boardHistory[boardHistory.length - 1];
     if (this.getField(board, row, col)) return;
@@ -117,11 +115,14 @@ class Board extends React.Component {
   }
 
   render() {
-    if (this.state.gameState == null) return null;
+    let gameInfo = this.state;
+    if (!gameInfo) return null;
 
-    let status = 'Next player: ' + (this.state.gameState.blackIsNext ? 'B' : 'W');
+    let player = 'You are playing with: ' + (gameInfo.isBlack ? 'B' : 'W');
+    let status = 'Next player: ' + (gameInfo.gameState.blackIsNext ? 'B' : 'W');
     return (
       <div>
+        <div className="status">{player}</div>
         <div className="status">{status}</div>
         {this.renderAllRows()}
       </div>
@@ -168,15 +169,11 @@ class NewGame extends React.Component {
     let opponentHref = "/" + (isBlack ? this.state.whitePlayerId : this.state.blackPlayerId);
     return (
       <div className="game">
-        Game ID: {this.state.gameId}
-        <br/>
-        White ID: {this.state.whitePlayerId}
-        <br/>
-        Black ID: {this.state.blackPlayerId}
-        <br/>
-        <a href={playerHref}>Your game link</a>
-        <br/>
-        <a href={opponentHref}>Opponent's game link</a>
+        <div className="status">Game ID: {this.state.gameId}</div>
+        <div className="status">White ID: {this.state.whitePlayerId}</div>
+        <div className="status">Black ID: {this.state.blackPlayerId}</div>
+        <div className="status"><a href={playerHref}>Your game link</a></div>
+        <div className="status"><a href={opponentHref}>Opponent's game link</a></div>
       </div>
     );
   }

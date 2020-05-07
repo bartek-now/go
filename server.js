@@ -35,7 +35,7 @@ const loadGameFromDb = (playerId) => {
       resolve({
         gameId: result.rows[0].game_id,
         gameState: JSON.parse(result.rows[0].state),
-        isBlack: result.rows[0].isBlack
+        isBlack: result.rows[0].is_black
       });
     });
   });

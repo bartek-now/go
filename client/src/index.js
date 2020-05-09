@@ -10,7 +10,6 @@ import {
 } from "react-router-dom";
 import './index.css';
 
-
 const loadUser = async (userLogin) => {
   const response = await fetch('/api/loaduser/' + userLogin);
   const body = await response.json();
@@ -61,14 +60,14 @@ function Square(props) {
   );
 }
 
-class Board extends React.Component {
+class Game extends React.Component {
   constructor(props) {
     super(props);
     this.continuouslyLoadGame();
   }
 
   continuouslyLoadGame() {
-    loadGame(this.props.playerId)
+    loadGame(this.props.match.params.playerId)
         .then(gameInfo => {
           this.initializeStateFromDb(gameInfo);
           setTimeout(() => this.continuouslyLoadGame(), 1500);
@@ -144,21 +143,12 @@ class Board extends React.Component {
       <div>
         <div className="status">{player}</div>
         <div className="status">{status}</div>
-        {this.renderAllRows()}
-      </div>
-    );
-  }
-}
-
-function Game() {
-  let { playerId } = useParams();
-  return (
-      <div className="game">
-        <div className="game-board">
-          <Board playerId={playerId} />
+        <div>
+          {this.renderAllRows()}
         </div>
       </div>
     );
+  }
 }
 
 class NewGame extends React.Component {
@@ -195,14 +185,14 @@ class NewGame extends React.Component {
   }
 }
 
-class UserProfile extends React.Component {
+class User extends React.Component {
   constructor(props) {
     super(props);
     this.continuouslyLoadUser();
   }
 
   continuouslyLoadUser() {
-    loadUser(this.props.userId)
+    loadUser(this.props.match.params.userLogin)
         .then(userInfo => {
           this.setState(userInfo); 
           setTimeout(() => this.continuouslyLoadUser(), 1500);
@@ -224,11 +214,11 @@ class UserProfile extends React.Component {
 
     return (
       <div>
-        <div>
+        <div className="status">
           <button onClick="">
-            Start new game
+            Start a new game
           </button>
-          against
+          &nbsp;against&nbsp;
           <select>
             <option value="-1"></option>
             {optionTemplate}
@@ -246,16 +236,6 @@ class UserProfile extends React.Component {
     );
   }
 }
-
-function User() {
-  let { userLogin } = useParams();
-  return (
-    <div className="user">
-      <UserProfile userId={userLogin} />
-    </div>
-  );
-}
-
 
 // ========================================
 

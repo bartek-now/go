@@ -228,6 +228,9 @@ class User extends React.Component {
     return (
       <div>
         <div className="status">
+          Hello {this.state.name}!
+        </div>
+        <div className="status">
           <button onClick={() => this.handleButtonClick()}>
             Start a new game
           </button>
@@ -238,7 +241,7 @@ class User extends React.Component {
           </select>
         </div>
         <div>
-          Existing games:
+          Or return to one of existing games:
           <nav>
             <ul>
               {gameTemplate}

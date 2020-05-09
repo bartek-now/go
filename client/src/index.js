@@ -5,7 +5,6 @@ import {
   Link,
   Route,
   Switch,
-  useParams,
   Redirect
 } from "react-router-dom";
 import './index.css';
@@ -138,7 +137,7 @@ class Game extends React.Component {
     if (!gameInfo) return null;
 
     let player = 'You are playing with: ' + (gameInfo.isBlack ? 'B' : 'W');
-    let status = gameInfo.isBlack == gameInfo.gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
+    let status = gameInfo.isBlack === gameInfo.gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
     return (
       <div>
         <div className="status">{player}</div>
@@ -200,8 +199,22 @@ class User extends React.Component {
         .catch(reason => alert('Failed to load the game from DB: ' + reason));
   }
 
+  handleButtonClick() {
+    let s = document.getElementById("opponent");
+    if (s.selectedIndex === 0) {
+      alert("No opponenet selected")
+      return;
+    }
+    let redirect = "/new/u/" + this.state.id + "/o/" + s.options[s.selectedIndex].value;
+    this.setState({redirect: redirect});
+  }
+
   render() {
     if (!this.state) return null;
+
+    if (this.state.redirect) {
+      return (<Redirect to={this.state.redirect} />);
+    }
 
     let optionTemplate = this.state.otherUsers.map(v => (
       <option value={v.id}>{v.name}</option>
@@ -215,12 +228,12 @@ class User extends React.Component {
     return (
       <div>
         <div className="status">
-          <button onClick="">
+          <button onClick={() => this.handleButtonClick()}>
             Start a new game
           </button>
           &nbsp;against&nbsp;
-          <select>
-            <option value="-1"></option>
+          <select id="opponent">
+            <option />
             {optionTemplate}
           </select>
         </div>

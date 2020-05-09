@@ -136,7 +136,7 @@ class Game extends React.Component {
     let gameInfo = this.state;
     if (!gameInfo) return null;
 
-    let player = 'You are playing with: ' + (gameInfo.isBlack ? 'B' : 'W');
+    let player = 'You are playing as ' + (gameInfo.isBlack ? 'Black' : 'White');
     let status = gameInfo.isBlack === gameInfo.gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
     return (
       <div>
@@ -221,7 +221,7 @@ class User extends React.Component {
     ));
     let gameTemplate = this.state.games.map(v => {
       let link = "/p/" + v.selfPlayerId;
-      let color = v.selfIsBlack ? 'B' : 'W';
+      let color = v.selfIsBlack ? 'Black' : 'White';
       return (<li><Link to={link}>Playing as {color} against {v.opponentName}</Link></li>);
     });
 

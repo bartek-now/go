@@ -11,8 +11,9 @@ import './index.css';
 
 const loadGame = async (playerId) => {
   const response = await fetch('/api/load/' + playerId);
-  const body = await response.json()
-  if (response.status !== 200) throw Error('Received status ' + response.status + ": " + body.message);
+  const body = await response.json();
+  if (response.status !== 200)
+    throw Error('Received status ' + response.status + ": " + body.message);
   return body;
 }
 
@@ -25,7 +26,8 @@ const saveGame = async (gameInfo) => {
     body: JSON.stringify(gameInfo.gameState),
   });
   const body = await response.json();
-  if (response.status !== 200) throw Error('Received status ' + response.status + ": " + body.message);
+  if (response.status !== 200)
+    throw Error('Received status ' + response.status + ": " + body.message);
 }
 
 const saveFreshGame = async (gameState) => {
@@ -52,14 +54,22 @@ function Square(props) {
 class Board extends React.Component {
   constructor(props) {
     super(props);
+    this.continuouslyLoadStateFromDb();
+  }
 
-    loadGame(props.playerId)
-        .then(gameInfo => this.initializeStateFromDb(gameInfo))
+  continuouslyLoadStateFromDb() {
+    loadGame(this.props.playerId)
+        .then(gameInfo => {
+          this.initializeStateFromDb(gameInfo);
+          setTimeout(() => this.continuouslyLoadStateFromDb(), 1500);
+        })
         .catch(reason => alert('Failed to load the game from DB: ' + reason));
   }
 
   initializeStateFromDb(gameInfo) {
-    this.setState(gameInfo);
+    if (!this.state ||
+        gameInfo.gameState.boardStates.length > this.state.gameState.boardStates.length)
+      this.setState(gameInfo);
   }
 
   getField(board, row, col) {

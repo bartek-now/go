@@ -138,7 +138,7 @@ class Game extends React.Component {
     if (!gameInfo) return null;
 
     let player = 'You are playing with: ' + (gameInfo.isBlack ? 'B' : 'W');
-    let status = 'Next player: ' + (gameInfo.gameState.blackIsNext ? 'B' : 'W');
+    let status = gameInfo.isBlack == gameInfo.gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
     return (
       <div>
         <div className="status">{player}</div>

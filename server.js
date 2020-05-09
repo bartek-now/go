@@ -56,23 +56,73 @@ const saveGameToDb = (gameId, gameState) => {
   });
 }
 
-const insertNewGameIntoDb = (ids, gameState) => {
+const insertNewGameIntoDb = (initState, randState) => {
   return new Promise(async function(resolve, reject) {
     // TODO: Convert into transactions.
     try {
       await pool.query(
-          'INSERT INTO Games (id, state) VALUES ($1::text, $2::text)', [ids.gameId.toString(), gameState]);
+          'INSERT INTO Games (id, state) VALUES ($1::text, $2::text)', [randState.gameId.toString(), init.gameState]);
       await pool.query(
-          'INSERT INTO GamePlayers (id, game_id, is_black) VALUES ($1::text, $2::text, FALSE)',
-          [ids.whitePlayerId.toString(), ids.gameId.toString()]);
+          'INSERT INTO GamePlayers (id, user_id, game_id, is_black) VALUES ($1::text, $2::text, $3::text, $4::bool)',
+          [randState.selfPlayerId.toString(), initState.selfUserId, randState.gameId.toString(), randState.selfIsBlack]);
       await pool.query(
-          'INSERT INTO GamePlayers (id, game_id, is_black) VALUES ($1::text, $2::text, TRUE)',
-          [ids.blackPlayerId.toString(), ids.gameId.toString()]);
-    } catch(error) {
+        'INSERT INTO GamePlayers (id, user_id, game_id, is_black) VALUES ($1::text, $2::text, $3::text, $4::bool)',
+        [randState.opponentPlayerId.toString(), initState.opponentUserId, randState.gameId.toString(), !randState.selfIsBlack]);
+      } catch(error) {
       reject(error)
       return;
     }
     resolve();
+  });
+}
+
+const loadUserFromDb = (userLogin) => {
+  return new Promise(async function(resolve, reject) {
+    try {
+      // TODO: Convert into transactions.
+      let result1 = await pool.query('SELECT id,name FROM Users WHERE login=$1::text', [userLogin]);
+      if (result1.rows.length == 0)
+        throw "User '" + userLogin + "' not found";
+      let userId = result1.rows[0].id;
+      let userName = result1.rows[0].name;
+
+      let result2 = await pool.query(
+          'SELECT p1.id,p1.is_black,u.id,u.name '
+              + 'FROM GamePlayers p1,GamePlayers p2,Users u '
+              + 'WHERE p1.user_id=$1::text AND p1.game_id=p2.game_id AND p1.user_id<>p2.user_id AND p2.user_id=u.id',
+          [userId]);
+      let games = [];
+      for (let i = 0; i < result2.rows.length; ++i) {
+        let row = result3.rows[i];
+        games.push({
+          selfPlayerId: row.p1.id,
+          selfIsBlack: row.is_black,
+          opponentUserId: row.id,
+          opponentName: row.name,
+        });
+      }
+
+      let result3 = await pool.query('SELECT id,name FROM Users WHERE id<>$1::text', [userId]);
+      let otherUsers = [];
+      for (let i = 0; i < result3.rows.length; ++i) {
+        let row = result3.rows[i];
+        otherUsers.push({
+          id: row.id,
+          name: row.name,
+        });
+      }
+
+      let userInfo = {
+        id: userId,
+        name: userName,
+        games: games,
+        otherUsers: otherUsers,
+      };
+      resolve(userInfo);
+    } catch(error) {
+      reject(error)
+      return;
+    }
   });
 }
 
@@ -82,8 +132,21 @@ const port = process.env.PORT || 5000;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.get('/api/load/:playerId', (req, res) => {
-  console.log("Loading game for player ID: ", req.params.playerId);
+app.get('/api/loaduser/:userLogin', (req, res) => {
+  console.log("Loading user profile:", req.params.userLogin);
+  loadUserFromDb(req.params.userLogin)
+      .then(userInfo => {
+        console.log("Successfully read user profile from DB: ", userInfo);
+        res.send(userInfo);
+      })
+      .catch(reason => {
+        console.log("Failure when reading user profile from DB: ", reason);
+        res.status(500).send({message: reason.toString()});
+      });
+});
+
+app.get('/api/loadgame/:playerId', (req, res) => {
+  console.log("Loading game for player ID:", req.params.playerId);
   loadGameFromDb(req.params.playerId)
       .then(gameInfo => {
         if (gameInfo) {
@@ -100,8 +163,8 @@ app.get('/api/load/:playerId', (req, res) => {
       });
 });
 
-app.post('/api/save/:gameId', (req, res) => {
-  console.log("Saving game ID: ", req.params.gameId, "\n", req.body);
+app.post('/api/savegame/:gameId', (req, res) => {
+  console.log("Saving game ID:", req.params.gameId, "\n", req.body);
   let gameState = req.body;
   saveGameToDb(req.params.gameId, gameState)
       .then(() => {
@@ -118,15 +181,16 @@ function getRandomInt(max) {
   return Math.floor(Math.random() * Math.floor(max));
 }
 
-app.post('/api/new/', (req, res) => {
+app.post('/api/newgame/', (req, res) => {
   console.log("Creating a new game ID:\n", req.body);
-  let ids = {
+  let randState = {
     gameId: getRandomInt(100000),
-    whitePlayerId: getRandomInt(100000),
-    blackPlayerId: getRandomInt(100000),
+    selfPlayerId: getRandomInt(100000),
+    opponentPlayerId: getRandomInt(100000),
+    selfIsBlack: Math.random() < 0.5,
   };
-  let gameState = req.body;
-  insertNewGameIntoDb(ids, gameState)
+  let initState = req.body;
+  insertNewGameIntoDb(initState, randState)
       .then(() => {
         console.log("Successfully inserted a new game into DB");
         res.send(ids);

@@ -2,15 +2,24 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {
   BrowserRouter as Router,
-  Switch,
+  Link,
   Route,
+  Switch,
   useParams
 } from "react-router-dom";
 import './index.css';
 
 
+const loadUser = async (userLogin) => {
+  const response = await fetch('/api/loaduser/' + userLogin);
+  const body = await response.json();
+  if (response.status !== 200)
+    throw Error('Received status ' + response.status + ": " + body.message);
+  return body;
+}
+
 const loadGame = async (playerId) => {
-  const response = await fetch('/api/load/' + playerId);
+  const response = await fetch('/api/loadgame/' + playerId);
   const body = await response.json();
   if (response.status !== 200)
     throw Error('Received status ' + response.status + ": " + body.message);
@@ -54,14 +63,14 @@ function Square(props) {
 class Board extends React.Component {
   constructor(props) {
     super(props);
-    this.continuouslyLoadStateFromDb();
+    this.continuouslyLoadGame();
   }
 
-  continuouslyLoadStateFromDb() {
+  continuouslyLoadGame() {
     loadGame(this.props.playerId)
         .then(gameInfo => {
           this.initializeStateFromDb(gameInfo);
-          setTimeout(() => this.continuouslyLoadStateFromDb(), 1500);
+          setTimeout(() => this.continuouslyLoadGame(), 1500);
         })
         .catch(reason => alert('Failed to load the game from DB: ' + reason));
   }
@@ -189,6 +198,68 @@ class NewGame extends React.Component {
   }
 }
 
+class UserProfile extends React.Component {
+  constructor(props) {
+    super(props);
+    this.continuouslyLoadUser();
+  }
+
+  continuouslyLoadUser() {
+    loadUser(this.props.userId)
+        .then(userInfo => {
+          this.setState(userInfo); 
+          setTimeout(() => this.continuouslyLoadUser(), 1500);
+        })
+        .catch(reason => alert('Failed to load the game from DB: ' + reason));
+  }
+
+  render() {
+    if (!this.state) return null;
+
+    let optionTemplate = this.state.otherUsers.map(v => (
+      <option value={v.id}>{v.name}</option>
+    ));
+    let gameTemplate = this.state.games.map(v => {
+      let link = "/p/" + v.selfPlayerId;
+      let color = v.selfIsBlack ? 'B' : 'W';
+      return (<li><Link to={link}>Playing as {color} against {v.opponentName}</Link></li>);
+    });
+
+    return (
+      <div>
+        <div>
+          <button onClick="">
+            Start new game
+          </button>
+          against
+          <select>
+            <option value="-1"></option>
+            {optionTemplate}
+          </select>
+        </div>
+        <div>
+          Existing games:
+          <nav>
+            <ul>
+              {gameTemplate}
+            </ul>
+          </nav>
+        </div>
+      </div>
+    );
+  }
+}
+
+function User() {
+  let { userLogin } = useParams();
+  return (
+    <div className="user">
+      <UserProfile userId={userLogin} />
+    </div>
+  );
+}
+
+
 // ========================================
 
 function App() {
@@ -198,8 +269,11 @@ function App() {
         <Route exact path="/new">
           <NewGame />
         </Route>
-        <Route exact path="/:playerId">
+        <Route exact path="/p/:playerId">
           <Game />
+        </Route>
+        <Route exact path="/u/:userLogin">
+          <User />
         </Route>
       </Switch>
     </Router>

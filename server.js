@@ -21,7 +21,9 @@ const pool = new Pool({
 const loadGameFromDb = (playerId) => {
   return new Promise(function(resolve, reject) {
     pool.query(
-        'SELECT game_id,state,is_black FROM GamePlayers p,Games g WHERE game_id=g.id AND p.id=$1::text',
+        'SELECT g.id AS game_id,g.state,p1.is_black,u1.name AS self_name,u2.name AS opponent_name '
+            + 'FROM Games g,GamePlayers p1,GamePlayers p2,Users u1, Users u2 '
+            + 'WHERE p1.id=$1::text AND p1.game_id=g.id AND p1.game_id=p2.game_id AND p1.user_id<>p2.user_id AND p1.user_id=u1.id AND p2.user_id=u2.id',
         [playerId],
         (error, result) => {
       if (error) {
@@ -35,7 +37,9 @@ const loadGameFromDb = (playerId) => {
       resolve({
         gameId: result.rows[0].game_id,
         gameState: JSON.parse(result.rows[0].state),
-        isBlack: result.rows[0].is_black
+        selfIsBlack: result.rows[0].is_black,
+        selfName:  result.rows[0].self_name,
+        opponentName:  result.rows[0].opponent_name,
       });
     });
   });

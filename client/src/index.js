@@ -94,7 +94,7 @@ class Game extends React.Component {
   handleClick(row, col) {
     let gameInfo = this.state;
     let gameState = gameInfo.gameState;
-    if (gameState.blackIsNext !== gameInfo.isBlack) return;
+    if (gameState.blackIsNext !== gameInfo.selfIsBlack) return;
 
     let boardHistory = gameState.boardStates;
     let board = boardHistory[boardHistory.length - 1];
@@ -136,8 +136,8 @@ class Game extends React.Component {
     let gameInfo = this.state;
     if (!gameInfo) return null;
 
-    let player = 'You are playing as ' + (gameInfo.isBlack ? 'Black' : 'White');
-    let status = gameInfo.isBlack === gameInfo.gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
+    let player = 'Hello ' + gameInfo.selfName + ', you are playing as ' + (gameInfo.selfIsBlack ? 'Black' : 'White') + ' against ' + gameInfo.opponentName;
+    let status = gameInfo.selfIsBlack === gameInfo.gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
     return (
       <div>
         <div className="status">{player}</div>

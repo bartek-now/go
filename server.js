@@ -61,7 +61,7 @@ const insertNewGameIntoDb = (initState, randState) => {
     // TODO: Convert into transactions.
     try {
       await pool.query(
-          'INSERT INTO Games (id, state) VALUES ($1::text, $2::text)', [randState.gameId.toString(), init.gameState]);
+          'INSERT INTO Games (id, state) VALUES ($1::text, $2::text)', [randState.gameId.toString(), initState.gameState]);
       await pool.query(
           'INSERT INTO GamePlayers (id, user_id, game_id, is_black) VALUES ($1::text, $2::text, $3::text, $4::bool)',
           [randState.selfPlayerId.toString(), initState.selfUserId, randState.gameId.toString(), randState.selfIsBlack]);
@@ -87,17 +87,18 @@ const loadUserFromDb = (userLogin) => {
       let userName = result1.rows[0].name;
 
       let result2 = await pool.query(
-          'SELECT p1.id,p1.is_black,u.id,u.name '
+          'SELECT p1.id AS player_id,p1.is_black,p2.user_id,u.name '
               + 'FROM GamePlayers p1,GamePlayers p2,Users u '
               + 'WHERE p1.user_id=$1::text AND p1.game_id=p2.game_id AND p1.user_id<>p2.user_id AND p2.user_id=u.id',
           [userId]);
       let games = [];
       for (let i = 0; i < result2.rows.length; ++i) {
-        let row = result3.rows[i];
+        let row = result2.rows[i];
+        console.log(row);
         games.push({
-          selfPlayerId: row.p1.id,
+          selfPlayerId: row.player_id,
           selfIsBlack: row.is_black,
-          opponentUserId: row.id,
+          opponentUserId: row.user_id,
           opponentName: row.name,
         });
       }
@@ -193,7 +194,7 @@ app.post('/api/newgame/', (req, res) => {
   insertNewGameIntoDb(initState, randState)
       .then(() => {
         console.log("Successfully inserted a new game into DB");
-        res.send(ids);
+        res.send({playerId: randState.selfPlayerId});
       })
       .catch(reason => {
         console.log("Failure when inserting a new game into DB: ", reason);

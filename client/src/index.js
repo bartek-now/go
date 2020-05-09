@@ -5,7 +5,8 @@ import {
   Link,
   Route,
   Switch,
-  useParams
+  useParams,
+  Redirect
 } from "react-router-dom";
 import './index.css';
 
@@ -27,7 +28,7 @@ const loadGame = async (playerId) => {
 }
 
 const saveGame = async (gameInfo) => {
-  const response = await fetch('/api/save/' + gameInfo.gameId, {
+  const response = await fetch('/api/savegame/' + gameInfo.gameId, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -40,7 +41,7 @@ const saveGame = async (gameInfo) => {
 }
 
 const saveFreshGame = async (gameState) => {
-  const response = await fetch('/api/new/', {
+  const response = await fetch('/api/newgame/', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -164,12 +165,13 @@ class NewGame extends React.Component {
   constructor(props) {
     super(props);
 
-    saveFreshGame(this.constructFreshState(9))
-        .then(ids => this.setState(ids))
+    console.log(this.props);
+    saveFreshGame(this.constructInitializationState(9))
+        .then(state => this.setState(state))
         .catch(reason => alert('Failed to initialize a game: ' + reason));
   }
 
-  constructFreshState(size) {
+  constructInitializationState(size) {
     let boardHistory = [];
     let gameState = {
       size: size,
@@ -177,24 +179,19 @@ class NewGame extends React.Component {
       boardStates: [boardHistory],
       blackIsNext: true,
     }
-    return gameState;
+    let initState = {
+      selfUserId: this.props.match.params.userId,
+      opponentUserId: this.props.match.params.opponentId,
+      gameState: gameState,
+    }
+    return initState;
   }
 
   render() {
     if (!this.state) return null;
 
-    let isBlack = Math.random() < 0.5;
-    let playerHref = "/" + (isBlack ? this.state.blackPlayerId : this.state.whitePlayerId);
-    let opponentHref = "/" + (isBlack ? this.state.whitePlayerId : this.state.blackPlayerId);
-    return (
-      <div className="game">
-        <div className="status">Game ID: {this.state.gameId}</div>
-        <div className="status">White ID: {this.state.whitePlayerId}</div>
-        <div className="status">Black ID: {this.state.blackPlayerId}</div>
-        <div className="status"><a href={playerHref}>Your game link</a></div>
-        <div className="status"><a href={opponentHref}>Opponent's game link</a></div>
-      </div>
-    );
+    let redirect = "/p/" + this.state.playerId;
+    return (<Redirect to={redirect} />);
   }
 }
 
@@ -266,15 +263,9 @@ function App() {
   return (
     <Router>
       <Switch>
-        <Route exact path="/new">
-          <NewGame />
-        </Route>
-        <Route exact path="/p/:playerId">
-          <Game />
-        </Route>
-        <Route exact path="/u/:userLogin">
-          <User />
-        </Route>
+        <Route exact path="/new/u/:userId/o/:opponentId" component={NewGame} />
+        <Route exact path="/p/:playerId" component={Game} />
+        <Route exact path="/u/:userLogin" component={User} />
       </Switch>
     </Router>
   );

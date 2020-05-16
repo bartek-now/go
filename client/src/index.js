@@ -1,3 +1,4 @@
+import * as moves from './moves';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {
@@ -6,7 +7,7 @@ import {
   Route,
   Switch,
   Redirect
-} from "react-router-dom";
+} from "react-router-dom"; 
 import './index.css';
 
 const loadUser = async (userLogin) => {
@@ -85,12 +86,6 @@ class Game extends React.Component {
     return !board[row] ? 0 : (!board[row][col] ? 0 : board[row][col]);
   }
 
-  setField(board, row, col, val) {
-    // If row is undefined, assume all its fields are undefined.
-    if (!board[row]) board[row] = [];
-    board[row][col] = val;
-  }
-
   handleClick(row, col) {
     let gameInfo = this.state;
     let gameState = gameInfo.gameState;
@@ -98,11 +93,9 @@ class Game extends React.Component {
 
     let boardHistory = gameState.boardStates;
     let board = boardHistory[boardHistory.length - 1];
+    // TODO: Move it to moves.makeMove
     if (this.getField(board, row, col)) return;
-    // Use a JSON trick to make a deep copy of the board, before modifying it.
-    board = JSON.parse(JSON.stringify(board));
-
-    this.setField(board, row, col, gameState.blackIsNext ? 1 : 2);
+    board = moves.makeMove(board, row, col, gameState.blackIsNext);
     gameState.blackIsNext = !gameState.blackIsNext;
     gameState.boardStates.push(board);
     this.setState(gameInfo);

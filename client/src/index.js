@@ -81,11 +81,6 @@ class Game extends React.Component {
       this.setState(gameInfo);
   }
 
-  getField(board, row, col) {
-    // If row is undefined, assume all its fields are undefined.
-    return !board[row] ? 0 : (!board[row][col] ? 0 : board[row][col]);
-  }
-
   handleClick(row, col) {
     let gameInfo = this.state;
     let gameState = gameInfo.gameState;
@@ -93,11 +88,13 @@ class Game extends React.Component {
 
     let boardHistory = gameState.boardStates;
     let board = boardHistory[boardHistory.length - 1];
-    // TODO: Move it to moves.makeMove
-    if (this.getField(board, row, col)) return;
-    board = moves.makeMove(board, row, col, gameState.blackIsNext);
+    let result = moves.makeMove(board, row, col, gameState.blackIsNext);
+    if (result.error) {
+      alert("Can't move there: " + result.error);
+      return;
+    }
     gameState.blackIsNext = !gameState.blackIsNext;
-    gameState.boardStates.push(board);
+    gameState.boardStates.push(result.board);
     this.setState(gameInfo);
     saveGame(gameInfo);
   }
@@ -105,7 +102,7 @@ class Game extends React.Component {
   renderSquare(row, col) {
     var boardHistory = this.state.gameState.boardStates;
     var board = boardHistory[boardHistory.length - 1];
-    let char = ["", "B", "W"][this.getField(board, row, col)];
+    let char = ["", "B", "W"][moves.getField(board, row, col)];
     return <Square value={char} onClick={() => this.handleClick(row, col)} />;
   }
 

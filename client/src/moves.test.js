@@ -22,21 +22,20 @@ function getBoardFromStr(str) {
   return board;
 }
 
-
 test('valid move', () => {
   let initial = `
       ...
       .B.
       ...
       `;
-  let newBoard = moves.makeMove(getBoardFromStr(initial), 0, 0, false).board;
+  let newBoard = moves.makeMove(3, getBoardFromStr(initial), 0, 0, false).board;
   expect(JSON.stringify(newBoard)).toBe(JSON.stringify(getBoardFromStr(`
       W..
       .B.
       ...
       `)));
 
-  newBoard = moves.makeMove(newBoard, 2, 2, true).board;
+  newBoard = moves.makeMove(3, newBoard, 2, 2, true).board;
   expect(JSON.stringify(newBoard)).toStrictEqual(JSON.stringify(getBoardFromStr(`
       W..
       .B.
@@ -50,9 +49,32 @@ test('field occupied', () => {
       .B.
       ..B
       `;
-  let error = moves.makeMove(getBoardFromStr(initial), 0, 0, false).error;
+  let error = moves.makeMove(3, getBoardFromStr(initial), 0, 0, false).error;
   expect(error).toBe('field is already occupied');
 
-  error = moves.makeMove(getBoardFromStr(initial), 2, 2, true).error;
+  error = moves.makeMove(3, getBoardFromStr(initial), 2, 2, true).error;
   expect(error).toBe('field is already occupied');
 });
+
+test('capture in center', () => {
+  let initial = `
+      ..B..
+      .BWB.
+      BWWWB
+      BWB.B
+      .B...
+      `;
+  let result = moves.makeMove(5, getBoardFromStr(initial), 4, 3, true);
+  expect(result.captured).toBe(0);
+
+  result = moves.makeMove(5, result.board, 3, 3, true);
+  expect(result.captured).toBe(5);
+  expect(JSON.stringify(result.board)).toStrictEqual(JSON.stringify(getBoardFromStr(`
+      ..B..
+      .B.B.
+      B...B
+      B.BBB
+      .B.B.
+      `)));
+});
+

@@ -88,7 +88,7 @@ class Game extends React.Component {
 
     let boardHistory = gameState.boardStates;
     let board = boardHistory[boardHistory.length - 1];
-    let result = moves.makeMove(board, row, col, gameState.blackIsNext);
+    let result = moves.makeMove(gameState.size, board, row, col, gameState.blackIsNext);
     if (result.error) {
       alert("Can't move there: " + result.error);
       return;

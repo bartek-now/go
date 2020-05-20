@@ -19,11 +19,11 @@ function setState(state, row, col) {
     state[row][col] = true;
 }
 
-function countFreedoms(size, board, state, row, col, capturingColor) {
+function countLiberties(size, board, state, row, col, capturingColor) {
+    // First check if we got outside of |capturingColor| section. If we're outside of the board or
+    // stepped on a field occupied by the opposite color, there is no liberty there. If the field is
+    // empty, it's a liberty.
     if (row < 0 || row >= size || col < 0 || col >= size) return 0;
-    if (getState(state, row, col)) return 0;
-    setState(state, row, col);
-
     let field = getField(board, row, col);
     if (!field) {
         return 1;
@@ -31,10 +31,15 @@ function countFreedoms(size, board, state, row, col, capturingColor) {
         return 0;
     }
 
-    return countFreedoms(size, board, state, row, col + 1, capturingColor)
-        + countFreedoms(size, board, state, row, col - 1, capturingColor)
-        + countFreedoms(size, board, state, row + 1, col, capturingColor)
-        + countFreedoms(size, board, state, row - 1, col, capturingColor);
+    // Check if this field was already visited and then mark as visited.
+    // Note, state can be set to true only for fields of |capturingColor|. 
+    if (getState(state, row, col)) return 0;
+    setState(state, row, col);
+
+    return countLiberties(size, board, state, row, col + 1, capturingColor)
+        + countLiberties(size, board, state, row, col - 1, capturingColor)
+        + countLiberties(size, board, state, row + 1, col, capturingColor)
+        + countLiberties(size, board, state, row - 1, col, capturingColor);
 }
 
 function capture(size, board, row, col, capturingColor) {
@@ -53,6 +58,8 @@ function capture(size, board, row, col, capturingColor) {
 
 function tryCapture(size, board, capturingBlack) {
     let capturingColor = capturingBlack ? 1 : 2;
+    // |state| is 2D array reflecting |board|. It's set to true if a field of |capturingColor| has
+    // been visited.
     let state = [];
     let captured = 0;
     for (let row = 0; row < size; ++row) {
@@ -60,8 +67,8 @@ function tryCapture(size, board, capturingBlack) {
             let field = getField(board, row, col);
             let s = getState(state, row, col);
             if (field === capturingColor && !s) {
-                let free = countFreedoms(size, board, state, row, col, capturingColor);
-                if (!free) captured += capture(size, board, row, col, capturingColor);
+                let liberties = countLiberties(size, board, state, row, col, capturingColor);
+                if (!liberties) captured += capture(size, board, row, col, capturingColor);
             }
         }
     }

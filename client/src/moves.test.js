@@ -78,3 +78,25 @@ test('capture in center', () => {
       `)));
 });
 
+test('capture three in center', () => {
+  let initial = `
+      ..B..
+      .BWB.
+      BW.WB
+      BW.B.
+      .B...
+      `;
+  let result = moves.makeMove(5, getBoardFromStr(initial), 3, 2, true);
+  expect(result.captured).toBe(0);
+
+  result = moves.makeMove(5, result.board, 2, 2, true);
+  expect(result.captured).toBe(4);
+  expect(JSON.stringify(result.board)).toStrictEqual(JSON.stringify(getBoardFromStr(`
+      ..B..
+      .B.B.
+      B.B.B
+      B.BB.
+      .B...
+      `)));
+});
+

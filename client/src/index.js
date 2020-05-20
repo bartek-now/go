@@ -93,6 +93,8 @@ class Game extends React.Component {
       alert("Can't move there: " + result.error);
       return;
     }
+    gameState.capturedWhite += gameState.blackIsNext ? result.captured : 0;
+    gameState.capturedBlack += gameState.blackIsNext ? 0 : result.captured;
     gameState.blackIsNext = !gameState.blackIsNext;
     gameState.boardStates.push(result.board);
     this.setState(gameInfo);
@@ -132,6 +134,8 @@ class Game extends React.Component {
       <div>
         <div className="status">{player}</div>
         <div className="status">{status}</div>
+        <div className="status">Black stones caputred: {gameInfo.gameState.capturedBlack}</div>
+        <div className="status">White stones captured: {gameInfo.gameState.capturedWhite}</div>
         <div>
           {this.renderAllRows()}
         </div>
@@ -151,11 +155,13 @@ class NewGame extends React.Component {
   }
 
   constructInitializationState(size) {
-    let boardHistory = [];
+    let emptyBoard = [];
     let gameState = {
       size: size,
       status: "ONGOING",
-      boardStates: [boardHistory],
+      boardStates: [emptyBoard],
+      capturedBlack : 0,
+      capturedWhite : 0,
       blackIsNext: true,
     }
     let initState = {

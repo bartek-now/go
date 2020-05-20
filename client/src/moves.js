@@ -56,10 +56,9 @@ function capture(size, board, row, col, capturingColor) {
         + capture(size, board, row - 1, col, capturingColor);
 }
 
-function tryCapture(size, board, row, col, capturingBlack) {
+function tryCapture(size, board, row, col, capturingColor) {
     if (row < 0 || row >= size || col < 0 || col >= size) return 0;
 
-    let capturingColor = capturingBlack ? 1 : 2;
     // |state| is 2D array reflecting |board|. It's set to true if a field of |capturingColor| has
     // been visited.
     let state = [];
@@ -80,11 +79,22 @@ export function makeMove(size, board, row, col, blackTurn) {
 
     // Use a JSON trick to make a deep copy of the board, before modifying it.
     let newBoard = JSON.parse(JSON.stringify(board));
-    setField(newBoard, row, col, blackTurn ? 1 : 2);
+    let moveColor = blackTurn ? 1 : 2;
+    let capturingColor = 3 - moveColor;
+    setField(newBoard, row, col, moveColor);
+
+    // Try capturing.
     let captured = 0;
-    captured += tryCapture(size, newBoard, row, col - 1, !blackTurn);
-    captured += tryCapture(size, newBoard, row, col + 1, !blackTurn);
-    captured += tryCapture(size, newBoard, row - 1, col, !blackTurn);
-    captured += tryCapture(size, newBoard, row + 1, col, !blackTurn);
+    captured += tryCapture(size, newBoard, row, col - 1, capturingColor);
+    captured += tryCapture(size, newBoard, row, col + 1, capturingColor);
+    captured += tryCapture(size, newBoard, row - 1, col, capturingColor);
+    captured += tryCapture(size, newBoard, row + 1, col, capturingColor);
+
+    // If the newly placed stone has no liberties, it's an illegal move. Check this after capturing
+    // because this may have created liberties.
+    let state = [];
+    if (!hasLiberties(size, newBoard, state, row, col, moveColor))
+        return {error: "field has no liberties"};
+
     return {board: newBoard, captured: captured};
 }

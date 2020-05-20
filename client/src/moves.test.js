@@ -94,7 +94,7 @@ test('capture in the center', () => {
       `));
 });
 
-test('capture three  eyes in the center', () => {
+test('capture three eyes in the center', () => {
   let initial = `
       ..W..
       .WBW.
@@ -115,7 +115,6 @@ test('capture three  eyes in the center', () => {
       .W...
       `));
 });
-
 
 test('capture in the corner', () => {
   let initial = `
@@ -188,3 +187,29 @@ test('capture on the edge 3', () => {
       `));
 });
 
+test('capture three eyes in the center', () => {
+  let initial = `
+      ..W..
+      .WBW.
+      WB.BW
+      WB.W.
+      .WW..
+      `;
+  let result = moves.makeMove(5, getBoardFromStr(initial), 3, 2, true);
+  expect(result.captured).toBe(0);
+
+  result = moves.makeMove(5, result.board, 2, 2, true);
+  expect(result.error).toBe("field has no liberties");
+});
+
+test('no liberties in the corner', () => {
+  let initial = `
+      .B
+      B.
+      `;
+  let result = moves.makeMove(2, getBoardFromStr(initial), 0, 0, false);
+  expect(result.error).toBe("field has no liberties");
+
+  result = moves.makeMove(2, getBoardFromStr(initial), 1, 1, false);
+  expect(result.error).toBe("field has no liberties");
+});

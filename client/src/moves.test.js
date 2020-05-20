@@ -1,5 +1,8 @@
 import * as moves from './moves';
 
+function cleanBoardStr(str) {
+  return str.trim().split(/\s+/).join("\n");
+}
 
 function getBoardFromStr(str) {
   let strRows = str.trim().split(/\s+/);
@@ -22,6 +25,19 @@ function getBoardFromStr(str) {
   return board;
 }
 
+function getStrFromBoard(size, board) {
+  let strRows = [];
+  for (let i = 0; i < size; ++i) {
+    let str = "";
+    for (let j = 0; j < size; ++j) {
+      str += [".", "B", "W"][moves.getField(board, i, j)];
+    }
+    strRows.push(str);
+  }
+  return strRows.join("\n");
+}
+
+
 test('valid move', () => {
   let initial = `
       ...
@@ -29,18 +45,18 @@ test('valid move', () => {
       ...
       `;
   let newBoard = moves.makeMove(3, getBoardFromStr(initial), 0, 0, false).board;
-  expect(JSON.stringify(newBoard)).toBe(JSON.stringify(getBoardFromStr(`
+  expect(getStrFromBoard(3, newBoard)).toBe(cleanBoardStr(`
       W..
       .B.
       ...
-      `)));
+      `));
 
   newBoard = moves.makeMove(3, newBoard, 2, 2, true).board;
-  expect(JSON.stringify(newBoard)).toStrictEqual(JSON.stringify(getBoardFromStr(`
+  expect(getStrFromBoard(3, newBoard)).toStrictEqual(cleanBoardStr(`
       W..
       .B.
       ..B
-      `)));
+      `));
 });
 
 test('field occupied', () => {
@@ -56,7 +72,7 @@ test('field occupied', () => {
   expect(error).toBe('field is already occupied');
 });
 
-test('capture in center', () => {
+test('capture in the center', () => {
   let initial = `
       ..B..
       .BWB.
@@ -69,34 +85,106 @@ test('capture in center', () => {
 
   result = moves.makeMove(5, result.board, 3, 3, true);
   expect(result.captured).toBe(5);
-  expect(JSON.stringify(result.board)).toStrictEqual(JSON.stringify(getBoardFromStr(`
+  expect(getStrFromBoard(5, result.board)).toStrictEqual(cleanBoardStr(`
       ..B..
       .B.B.
       B...B
       B.BBB
       .B.B.
-      `)));
+      `));
 });
 
-test('capture three in center', () => {
+test('capture three  eyes in the center', () => {
   let initial = `
-      ..B..
-      .BWB.
-      BW.WB
-      BW.B.
-      .B...
+      ..W..
+      .WBW.
+      WB.BW
+      WB.W.
+      .W...
       `;
-  let result = moves.makeMove(5, getBoardFromStr(initial), 3, 2, true);
+  let result = moves.makeMove(5, getBoardFromStr(initial), 3, 2, false);
   expect(result.captured).toBe(0);
 
-  result = moves.makeMove(5, result.board, 2, 2, true);
+  result = moves.makeMove(5, result.board, 2, 2, false);
   expect(result.captured).toBe(4);
-  expect(JSON.stringify(result.board)).toStrictEqual(JSON.stringify(getBoardFromStr(`
-      ..B..
-      .B.B.
-      B.B.B
-      B.BB.
-      .B...
-      `)));
+  expect(getStrFromBoard(5, result.board)).toStrictEqual(cleanBoardStr(`
+      ..W..
+      .W.W.
+      W.W.W
+      W.WW.
+      .W...
+      `));
+});
+
+
+test('capture in the corner', () => {
+  let initial = `
+      W.
+      ..
+      `;
+  let result = moves.makeMove(2, getBoardFromStr(initial), 1, 0, true);
+  expect(result.captured).toBe(0);
+
+  result = moves.makeMove(2, result.board, 0, 1, true);
+  expect(result.captured).toBe(1);
+  expect(getStrFromBoard(2, result.board)).toStrictEqual(cleanBoardStr(`
+      .B
+      B.
+      `));
+});
+
+test('capture on the edge', () => {
+  let initial = `
+      .WW.
+      WBBB
+      WBWW
+      .W..
+      `;
+  let result = moves.makeMove(4, getBoardFromStr(initial), 0, 3, false);
+  expect(result.captured).toBe(4);
+  expect(getStrFromBoard(4, result.board)).toBe(cleanBoardStr(`
+      .WWW
+      W...
+      W.WW
+      .W..
+      `));
+});
+
+test('capture on the edge 2', () => {
+  let initial = `
+      .B..
+      BWB.
+      BWWB
+      ..WB
+      `;
+  let result = moves.makeMove(4, getBoardFromStr(initial), 3, 0, true);
+  expect(result.captured).toBe(0);
+
+  result = moves.makeMove(4, result.board, 3, 1, true);
+  expect(getStrFromBoard(4, result.board)).toBe(cleanBoardStr(`
+      .B..
+      B.B.
+      B..B
+      BB.B
+      `));
+});
+
+test('capture on the edge 3', () => {
+  let initial = `
+      .....
+      .....
+      WWWWW
+      WBBBW
+      WB.BW
+      `;
+  let result = moves.makeMove(5, getBoardFromStr(initial), 4, 2, false);
+  expect(result.captured).toBe(5);
+  expect(getStrFromBoard(5, result.board)).toBe(cleanBoardStr(`
+      .....
+      .....
+      WWWWW
+      W...W
+      W.W.W
+      `));
 });
 

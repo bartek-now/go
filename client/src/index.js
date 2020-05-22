@@ -32,20 +32,20 @@ const saveGame = async (gameInfo) => {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(gameInfo.gameState),
+    body: JSON.stringify(gameInfo.gameStates),
   });
   const body = await response.json();
   if (response.status !== 200)
     throw Error('Received status ' + response.status + ": " + body.message);
 }
 
-const saveFreshGame = async (gameState) => {
+const saveFreshGame = async (gameSeed) => {
   const response = await fetch('/api/newgame/', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(gameState),
+    body: JSON.stringify(gameSeed),
   });
   const body = await response.json();
   if (response.status !== 200) throw Error('Received status ' + response.status + ": " + body.message);
@@ -77,48 +77,47 @@ class Game extends React.Component {
 
   initializeStateFromDb(gameInfo) {
     if (!this.state ||
-        gameInfo.gameState.boardStates.length > this.state.gameState.boardStates.length)
+      gameInfo.gameStates.length > this.state.gameStates.length)
       this.setState(gameInfo);
   }
 
   handleClick(row, col) {
     let gameInfo = this.state;
-    let gameState = gameInfo.gameState;
+    let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     if (gameState.blackIsNext !== gameInfo.selfIsBlack) return;
 
-    let boardHistory = gameState.boardStates;
-    let board = boardHistory[boardHistory.length - 1];
-    let result = moves.makeMove(gameState.size, board, row, col, gameState.blackIsNext);
+    let result = moves.makeMove(gameState, row, col);
     if (result.error) {
       alert("Can't move there: " + result.error);
       return;
     }
-    gameState.capturedWhite += gameState.blackIsNext ? result.captured : 0;
-    gameState.capturedBlack += gameState.blackIsNext ? 0 : result.captured;
-    gameState.blackIsNext = !gameState.blackIsNext;
-    gameState.boardStates.push(result.board);
+    gameInfo.gameStates.push(result.gameState);
     this.setState(gameInfo);
     saveGame(gameInfo);
   }
 
   renderSquare(row, col) {
-    var boardHistory = this.state.gameState.boardStates;
-    var board = boardHistory[boardHistory.length - 1];
-    let char = ["", "B", "W"][moves.getField(board, row, col)];
+    let gameInfo = this.state;
+    let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
+    let char = ["", "B", "W"][moves.getField(gameState.board, row, col)];
     return <Square value={char} onClick={() => this.handleClick(row, col)} />;
   }
 
   renderRow(row) {
+    let gameInfo = this.state;
+    let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let arr = []
-    for (let i = 0; i < this.state.gameState.size; i++) {
+    for (let i = 0; i < gameState.size; i++) {
       arr.push(this.renderSquare(row, i));
     }
     return React.createElement("div", {className:"board-row"}, ...arr);
   }
 
   renderAllRows() {
+    let gameInfo = this.state;
+    let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let arr = []
-    for (let i = 0; i < this.state.gameState.size; i++) {
+    for (let i = 0; i < gameState.size; i++) {
       arr.push(this.renderRow(i));
     }
     return React.createElement("div", null, ...arr);
@@ -128,14 +127,15 @@ class Game extends React.Component {
     let gameInfo = this.state;
     if (!gameInfo) return null;
 
+    let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let player = 'Hello ' + gameInfo.selfName + ', you are playing as ' + (gameInfo.selfIsBlack ? 'Black' : 'White') + ' against ' + gameInfo.opponentName;
-    let status = gameInfo.selfIsBlack === gameInfo.gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
+    let status = gameInfo.selfIsBlack === gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
     return (
       <div>
         <div className="status">{player}</div>
         <div className="status">{status}</div>
-        <div className="status">Black stones caputred: {gameInfo.gameState.capturedBlack}</div>
-        <div className="status">White stones captured: {gameInfo.gameState.capturedWhite}</div>
+        <div className="status">Black stones caputred: {gameState.capturedBlack}</div>
+        <div className="status">White stones captured: {gameState.capturedWhite}</div>
         <div>
           {this.renderAllRows()}
         </div>
@@ -148,28 +148,19 @@ class NewGame extends React.Component {
   constructor(props) {
     super(props);
 
-    console.log(this.props);
-    saveFreshGame(this.constructInitializationState(9))
+    // TODO: allow to provide size in UI
+    saveFreshGame(this.constructGameSeed(9))
         .then(state => this.setState(state))
         .catch(reason => alert('Failed to initialize a game: ' + reason));
   }
 
-  constructInitializationState(size) {
-    let emptyBoard = [];
-    let gameState = {
-      size: size,
-      status: "ONGOING",
-      boardStates: [emptyBoard],
-      capturedBlack : 0,
-      capturedWhite : 0,
-      blackIsNext: true,
-    }
-    let initState = {
+  constructGameSeed(size) {
+    let gameSeed = {
       selfUserId: this.props.match.params.userId,
       opponentUserId: this.props.match.params.opponentId,
-      gameState: gameState,
-    }
-    return initState;
+      gameState: moves.constructInitialState(size),
+    };
+    return gameSeed;
   }
 
   render() {

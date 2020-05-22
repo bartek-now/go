@@ -22,10 +22,12 @@ function getBoardFromStr(str) {
       board[i] = row;
     }
   }
-  return board;
+  return {board: board, size: size};
 }
 
-function getStrFromBoard(size, board) {
+function getBoardStrFromState(state) {
+  let board = state.board;
+  let size = state.size;
   let strRows = [];
   for (let i = 0; i < size; ++i) {
     let str = "";
@@ -37,198 +39,248 @@ function getStrFromBoard(size, board) {
   return strRows.join("\n");
 }
 
+function makeState(boardStr, blackIsNext) {
+  let ret = getBoardFromStr(boardStr);
+  let state = moves.constructInitialState(ret.size);
+  state.board = ret.board;
+  state.blackIsNext = blackIsNext;
+  return state;
+}
 
 test('valid move', () => {
   let initial = `
-      ...
-      .B.
-      ...
-      `;
-  let newBoard = moves.makeMove(3, getBoardFromStr(initial), 0, 0, false).board;
-  expect(getStrFromBoard(3, newBoard)).toBe(cleanBoardStr(`
-      W..
-      .B.
-      ...
-      `));
+  ...
+  .B.
+  ...
+  `;
+  let state = makeState(initial, false);
 
-  newBoard = moves.makeMove(3, newBoard, 2, 2, true).board;
-  expect(getStrFromBoard(3, newBoard)).toStrictEqual(cleanBoardStr(`
-      W..
-      .B.
-      ..B
-      `));
+  state = moves.makeMove(state, 0, 0).gameState;
+  expect(state.blackIsNext).toBe(true);
+  expect(state.capturedWhite).toBe(0);
+  expect(state.capturedBlack).toBe(0);
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  W..
+  .B.
+  ...
+  `));
+
+  state = moves.makeMove(state, 2, 2).gameState;
+  expect(state.blackIsNext).toBe(false);
+  expect(state.capturedWhite).toBe(0);
+  expect(state.capturedBlack).toBe(0);
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  W..
+  .B.
+  ..B
+  `));
 });
 
 test('field occupied', () => {
   let initial = `
-      B..
-      .B.
-      ..B
-      `;
-  let error = moves.makeMove(3, getBoardFromStr(initial), 0, 0, false).error;
+  B..
+  .B.
+  ..B
+  `;
+  let state = makeState(initial, true);
+
+  let error = moves.makeMove(state, 0, 0).error;
   expect(error).toBe('field is already occupied');
 
-  error = moves.makeMove(3, getBoardFromStr(initial), 2, 2, true).error;
+  state.blackIsNext = !state.blackIsNext;
+  error = moves.makeMove(state, 2, 2).error;
   expect(error).toBe('field is already occupied');
 });
 
 test('capture in the center', () => {
   let initial = `
-      ..B..
-      .BWB.
-      BWWWB
-      BWB.B
-      .B...
-      `;
-  let result = moves.makeMove(5, getBoardFromStr(initial), 4, 3, true);
-  expect(result.captured).toBe(0);
+  ..B..
+  .BWB.
+  BWWWB
+  BWB.B
+  .B...
+  `;
+  let state = makeState(initial, true);
 
-  result = moves.makeMove(5, result.board, 3, 3, true);
-  expect(result.captured).toBe(5);
-  expect(getStrFromBoard(5, result.board)).toStrictEqual(cleanBoardStr(`
-      ..B..
-      .B.B.
-      B...B
-      B.BBB
-      .B.B.
-      `));
+  state = moves.makeMove(state, 4, 3).gameState;
+  expect(state.capturedWhite).toBe(0);
+
+  state.blackIsNext = true;
+  state = moves.makeMove(state, 3, 3).gameState;
+  expect(state.capturedWhite).toBe(5);
+  expect(state.capturedBlack).toBe(0);
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  ..B..
+  .B.B.
+  B...B
+  B.BBB
+  .B.B.
+  `));
 });
 
 test('capture 3 groups in the center', () => {
   let initial = `
-      ..W..
-      .WBW.
-      WB.BW
-      WB.W.
-      .W...
-      `;
-  let result = moves.makeMove(5, getBoardFromStr(initial), 3, 2, false);
-  expect(result.captured).toBe(0);
+  ..W..
+  .WBW.
+  WB.BW
+  WB.W.
+  .W...
+  `;
+  let state = makeState(initial, false);
 
-  result = moves.makeMove(5, result.board, 2, 2, false);
-  expect(result.captured).toBe(4);
-  expect(getStrFromBoard(5, result.board)).toStrictEqual(cleanBoardStr(`
-      ..W..
-      .W.W.
-      W.W.W
-      W.WW.
-      .W...
-      `));
+  state = moves.makeMove(state, 3, 2).gameState;
+  expect(state.capturedBlack).toBe(0);
+
+  state.blackIsNext = false;
+  state = moves.makeMove(state, 2, 2).gameState;
+  expect(state.capturedBlack).toBe(4);
+  expect(state.capturedWhite).toBe(0);
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  ..W..
+  .W.W.
+  W.W.W
+  W.WW.
+  .W...
+  `));
 });
 
 test('capture from within', () => {
   let initial = `
-      BBBBB
-      BWWWB
-      BW.WB
-      BWWWB
-      BBBBB
-      `;
-  let result = moves.makeMove(5, getBoardFromStr(initial), 2, 2, true);
-  expect(result.captured).toBe(8);
-  expect(getStrFromBoard(5, result.board)).toStrictEqual(cleanBoardStr(`
-      BBBBB
-      B...B
-      B.B.B
-      B...B
-      BBBBB
-      `));
+  BBBBB
+  BWWWB
+  BW.WB
+  BWWWB
+  BBBBB
+  `;
+  let state = makeState(initial, true);
+
+  state = moves.makeMove(state, 2, 2).gameState;
+  expect(state.capturedWhite).toBe(8);
+  expect(state.capturedBlack).toBe(0);
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  BBBBB
+  B...B
+  B.B.B
+  B...B
+  BBBBB
+  `));
 });
 
 test('capture in the corner', () => {
   let initial = `
-      W.
-      ..
-      `;
-  let result = moves.makeMove(2, getBoardFromStr(initial), 1, 0, true);
-  expect(result.captured).toBe(0);
+  W.
+  ..
+  `;
+  let state = makeState(initial, true);
 
-  result = moves.makeMove(2, result.board, 0, 1, true);
-  expect(result.captured).toBe(1);
-  expect(getStrFromBoard(2, result.board)).toStrictEqual(cleanBoardStr(`
-      .B
-      B.
-      `));
+  state = moves.makeMove(state, 1, 0).gameState;
+  expect(state.capturedWhite).toBe(0);
+
+  state.blackIsNext = true;
+  state = moves.makeMove(state, 0, 1).gameState;
+  expect(state.capturedWhite).toBe(1);
+  expect(state.capturedBlack).toBe(0);
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  .B
+  B.
+  `));
 });
 
 test('capture on the edge', () => {
   let initial = `
-      .WW.
-      WBBB
-      WBWW
-      .W..
-      `;
-  let result = moves.makeMove(4, getBoardFromStr(initial), 0, 3, false);
-  expect(result.captured).toBe(4);
-  expect(getStrFromBoard(4, result.board)).toBe(cleanBoardStr(`
-      .WWW
-      W...
-      W.WW
-      .W..
-      `));
+  .WW.
+  WBBB
+  WBWW
+  .W..
+  `;
+  let state = makeState(initial, false);
+
+  state = moves.makeMove(state, 0, 3).gameState;
+  expect(state.capturedBlack).toBe(4);
+  expect(state.capturedWhite).toBe(0);
+
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  .WWW
+  W...
+  W.WW
+  .W..
+  `));
 });
 
 test('capture on the edge 2', () => {
   let initial = `
-      .B..
-      BWB.
-      BWWB
-      ..WB
-      `;
-  let result = moves.makeMove(4, getBoardFromStr(initial), 3, 0, true);
-  expect(result.captured).toBe(0);
+  .B..
+  BWB.
+  BWWB
+  ..WB
+  `;
+  let state = makeState(initial, true);
 
-  result = moves.makeMove(4, result.board, 3, 1, true);
-  expect(getStrFromBoard(4, result.board)).toBe(cleanBoardStr(`
-      .B..
-      B.B.
-      B..B
-      BB.B
-      `));
+  state = moves.makeMove(state, 3, 0).gameState;
+  expect(state.capturedWhite).toBe(0);
+
+  state.blackIsNext = true;
+  state = moves.makeMove(state, 3, 1).gameState;
+  expect(state.capturedWhite).toBe(4);
+  expect(state.capturedBlack).toBe(0);
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  .B..
+  B.B.
+  B..B
+  BB.B
+  `));
 });
 
 test('capture on the edge 3', () => {
   let initial = `
-      .....
-      .....
-      WWWWW
-      WBBBW
-      WB.BW
-      `;
-  let result = moves.makeMove(5, getBoardFromStr(initial), 4, 2, false);
-  expect(result.captured).toBe(5);
-  expect(getStrFromBoard(5, result.board)).toBe(cleanBoardStr(`
-      .....
-      .....
-      WWWWW
-      W...W
-      W.W.W
-      `));
+  .....
+  .....
+  WWWWW
+  WBBBW
+  WB.BW
+  `;
+  let state = makeState(initial, false);
+
+  state = moves.makeMove(state, 4, 2).gameState;
+  expect(state.capturedBlack).toBe(5);
+  expect(state.capturedWhite).toBe(0);
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  .....
+  .....
+  WWWWW
+  W...W
+  W.W.W
+  `));
 });
 
 test('no liberties in the center', () => {
   let initial = `
-      ..W..
-      .WBW.
-      WB.BW
-      WB.W.
-      .WW..
-      `;
-  let result = moves.makeMove(5, getBoardFromStr(initial), 3, 2, true);
-  expect(result.captured).toBe(0);
+  ..W..
+  .WBW.
+  WB.BW
+  WB.W.
+  .WW..
+  `;
+  let state = makeState(initial, true);
 
-  result = moves.makeMove(5, result.board, 2, 2, true);
-  expect(result.error).toBe("field has no liberties");
+  state = moves.makeMove(state, 3, 2).gameState;
+  expect(state.capturedWhite).toBe(0);
+
+  state.blackIsNext = true;
+  let error = moves.makeMove(state, 2, 2).error;
+  expect(error).toBe("field has no liberties");
 });
 
 test('no liberties in the corner', () => {
   let initial = `
-      .B
-      B.
-      `;
-  let result = moves.makeMove(2, getBoardFromStr(initial), 0, 0, false);
-  expect(result.error).toBe("field has no liberties");
+  .B
+  B.
+  `;
+  let state = makeState(initial, false);
 
-  result = moves.makeMove(2, getBoardFromStr(initial), 1, 1, false);
-  expect(result.error).toBe("field has no liberties");
+  let error = moves.makeMove(state, 0, 0).error;
+  expect(error).toBe("field has no liberties");
+
+  error = moves.makeMove(state, 1, 1).error;
+  expect(error).toBe("field has no liberties");
 });

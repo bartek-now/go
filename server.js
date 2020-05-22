@@ -36,7 +36,7 @@ const loadGameFromDb = (playerId) => {
       }
       resolve({
         gameId: result.rows[0].game_id,
-        gameState: JSON.parse(result.rows[0].state),
+        gameStates: JSON.parse(result.rows[0].state),
         selfIsBlack: result.rows[0].is_black,
         selfName:  result.rows[0].self_name,
         opponentName:  result.rows[0].opponent_name,
@@ -45,11 +45,11 @@ const loadGameFromDb = (playerId) => {
   });
 }
 
-const saveGameToDb = (gameId, gameState) => {
+const saveGameToDb = (gameId, gameStates) => {
   return new Promise(function(resolve, reject) {
     pool.query(
         'UPDATE Games SET state=$2::text WHERE id=$1::text',
-        [gameId, gameState],
+        [gameId, JSON.stringify(gameStates)],
         error => {
       if (error) {
         reject(error)
@@ -60,18 +60,18 @@ const saveGameToDb = (gameId, gameState) => {
   });
 }
 
-const insertNewGameIntoDb = (initState, randState) => {
+const insertNewGameIntoDb = (gameSeed, randState) => {
   return new Promise(async function(resolve, reject) {
     // TODO: Convert into transactions.
     try {
       await pool.query(
-          'INSERT INTO Games (id, state) VALUES ($1::text, $2::text)', [randState.gameId.toString(), initState.gameState]);
+          'INSERT INTO Games (id, state) VALUES ($1::text, $2::text)', [randState.gameId.toString(), JSON.stringify([gameSeed.gameState])]);
       await pool.query(
           'INSERT INTO GamePlayers (id, user_id, game_id, is_black) VALUES ($1::text, $2::text, $3::text, $4::bool)',
-          [randState.selfPlayerId.toString(), initState.selfUserId, randState.gameId.toString(), randState.selfIsBlack]);
+          [randState.selfPlayerId.toString(), gameSeed.selfUserId, randState.gameId.toString(), randState.selfIsBlack]);
       await pool.query(
         'INSERT INTO GamePlayers (id, user_id, game_id, is_black) VALUES ($1::text, $2::text, $3::text, $4::bool)',
-        [randState.opponentPlayerId.toString(), initState.opponentUserId, randState.gameId.toString(), !randState.selfIsBlack]);
+        [randState.opponentPlayerId.toString(), gameSeed.opponentUserId, randState.gameId.toString(), !randState.selfIsBlack]);
       } catch(error) {
       reject(error)
       return;
@@ -194,8 +194,8 @@ app.post('/api/newgame/', (req, res) => {
     opponentPlayerId: getRandomInt(100000),
     selfIsBlack: Math.random() < 0.5,
   };
-  let initState = req.body;
-  insertNewGameIntoDb(initState, randState)
+  let gameSeed = req.body;
+  insertNewGameIntoDb(gameSeed, randState)
       .then(() => {
         console.log("Successfully inserted a new game into DB");
         res.send({playerId: randState.selfPlayerId});

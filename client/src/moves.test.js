@@ -94,7 +94,7 @@ test('capture in the center', () => {
       `));
 });
 
-test('capture three eyes in the center', () => {
+test('capture 3 groups in the center', () => {
   let initial = `
       ..W..
       .WBW.
@@ -113,6 +113,25 @@ test('capture three eyes in the center', () => {
       W.W.W
       W.WW.
       .W...
+      `));
+});
+
+test('capture from within', () => {
+  let initial = `
+      BBBBB
+      BWWWB
+      BW.WB
+      BWWWB
+      BBBBB
+      `;
+  let result = moves.makeMove(5, getBoardFromStr(initial), 2, 2, true);
+  expect(result.captured).toBe(8);
+  expect(getStrFromBoard(5, result.board)).toStrictEqual(cleanBoardStr(`
+      BBBBB
+      B...B
+      B.B.B
+      B...B
+      BBBBB
       `));
 });
 
@@ -187,7 +206,7 @@ test('capture on the edge 3', () => {
       `));
 });
 
-test('capture three eyes in the center', () => {
+test('no liberties in the center', () => {
   let initial = `
       ..W..
       .WBW.

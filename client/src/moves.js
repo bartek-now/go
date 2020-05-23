@@ -86,10 +86,11 @@ function tryCapture(size, board, row, col, capturingColor) {
 
 // Returns an object that either has a new |board| (and independent copy of the input board, with
 // the move applied), or |error|.
-export function makeMove(state, row, col) {
+export function makeMove(gameStates, row, col) {
+    let state = gameStates[gameStates.length - 1];
     let board = state.board;
     let size = state.size;
-    if (getField(board, row, col)) return {error: "field is already occupied"};
+    if (getField(board, row, col)) throw Error("field is already occupied");
 
     // Use a JSON trick to make a deep copy of the board, before modifying it.
     let newState = JSON.parse(JSON.stringify(state));
@@ -117,7 +118,7 @@ export function makeMove(state, row, col) {
     // because this may have created liberties.
     let visitState = [];
     if (!hasLiberties(size, newState.board, visitState, row, col, moveColor))
-        return {error: "field has no liberties"};
+        throw Error("field has no liberties");
 
-    return {gameState: newState};
+    gameStates.push(newState);
 }

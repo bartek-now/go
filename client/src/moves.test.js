@@ -53,9 +53,10 @@ test('valid move', () => {
   .B.
   ...
   `;
-  let state = makeState(initial, false);
+  let states = [makeState(initial, false)];
 
-  state = moves.makeMove(state, 0, 0).gameState;
+  moves.makeMove(states, 0, 0);
+  let state = states[states.length - 1]
   expect(state.blackIsNext).toBe(true);
   expect(state.capturedWhite).toBe(0);
   expect(state.capturedBlack).toBe(0);
@@ -66,7 +67,8 @@ test('valid move', () => {
   ...
   `));
 
-  state = moves.makeMove(state, 2, 2).gameState;
+  moves.makeMove(states, 2, 2);
+  state = states[states.length - 1]
   expect(state.blackIsNext).toBe(false);
   expect(state.capturedWhite).toBe(0);
   expect(state.capturedBlack).toBe(0);
@@ -84,14 +86,13 @@ test('field occupied', () => {
   .B.
   ..B
   `;
-  let state = makeState(initial, true);
+  let states = [makeState(initial, true)];
+  let state = states[states.length - 1]
 
-  let error = moves.makeMove(state, 0, 0).error;
-  expect(error).toBe('field is already occupied');
+  expect(() => moves.makeMove(states, 0, 0)).toThrowError('field is already occupied');
 
   state.blackIsNext = !state.blackIsNext;
-  error = moves.makeMove(state, 2, 2).error;
-  expect(error).toBe('field is already occupied');
+  expect(() => moves.makeMove(states, 2, 2)).toThrowError('field is already occupied');
 });
 
 test('capture in the center', () => {
@@ -102,14 +103,16 @@ test('capture in the center', () => {
   BWB.B
   .B...
   `;
-  let state = makeState(initial, true);
+  let states = [makeState(initial, true)];
 
-  state = moves.makeMove(state, 4, 3).gameState;
+  moves.makeMove(states, 4, 3);
+  let state = states[states.length - 1]
   expect(state.capturedWhite).toBe(0);
   expect(state.stoneCnt).toBe(15);
 
   state.blackIsNext = true;
-  state = moves.makeMove(state, 3, 3).gameState;
+  moves.makeMove(states, 3, 3);
+  state = states[states.length - 1]
   expect(state.capturedWhite).toBe(5);
   expect(state.capturedBlack).toBe(0);
   expect(state.stoneCnt).toBe(11);
@@ -130,14 +133,16 @@ test('capture 3 groups in the center', () => {
   WB.W.
   .W...
   `;
-  let state = makeState(initial, false);
+  let states = [makeState(initial, false)];
 
-  state = moves.makeMove(state, 3, 2).gameState;
+  moves.makeMove(states, 3, 2);
+  let state = states[states.length - 1]
   expect(state.capturedBlack).toBe(0);
   expect(state.stoneCnt).toBe(13);
 
   state.blackIsNext = false;
-  state = moves.makeMove(state, 2, 2).gameState;
+  moves.makeMove(states, 2, 2);
+  state = states[states.length - 1]
   expect(state.capturedBlack).toBe(4);
   expect(state.capturedWhite).toBe(0);
   expect(state.stoneCnt).toBe(10);
@@ -158,9 +163,10 @@ test('capture from within', () => {
   BWWWB
   BBBBB
   `;
-  let state = makeState(initial, true);
+  let states = [makeState(initial, true)];
 
-  state = moves.makeMove(state, 2, 2).gameState;
+  moves.makeMove(states, 2, 2);
+  let state = states[states.length - 1]
   expect(state.capturedWhite).toBe(8);
   expect(state.capturedBlack).toBe(0);
   expect(state.stoneCnt).toBe(17);
@@ -178,14 +184,16 @@ test('capture in the corner', () => {
   W.
   ..
   `;
-  let state = makeState(initial, true);
+  let states = [makeState(initial, true)];
 
-  state = moves.makeMove(state, 1, 0).gameState;
+  moves.makeMove(states, 1, 0);
+  let state = states[states.length - 1]
   expect(state.capturedWhite).toBe(0);
   expect(state.stoneCnt).toBe(2);
 
   state.blackIsNext = true;
-  state = moves.makeMove(state, 0, 1).gameState;
+  moves.makeMove(states, 0, 1);
+  state = states[states.length - 1]
   expect(state.capturedWhite).toBe(1);
   expect(state.capturedBlack).toBe(0);
   expect(state.stoneCnt).toBe(2);
@@ -202,9 +210,10 @@ test('capture on the edge', () => {
   WBWW
   .W..
   `;
-  let state = makeState(initial, false);
+  let states = [makeState(initial, false)];
 
-  state = moves.makeMove(state, 0, 3).gameState;
+  moves.makeMove(states, 0, 3);
+  let state = states[states.length - 1]
   expect(state.capturedBlack).toBe(4);
   expect(state.capturedWhite).toBe(0);
   expect(state.stoneCnt).toBe(8);
@@ -223,14 +232,16 @@ test('capture on the edge 2', () => {
   BWWB
   ..WB
   `;
-  let state = makeState(initial, true);
+  let states = [makeState(initial, true)];
 
-  state = moves.makeMove(state, 3, 0).gameState;
+  moves.makeMove(states, 3, 0);
+  let state = states[states.length - 1]
   expect(state.capturedWhite).toBe(0);
   expect(state.stoneCnt).toBe(11);
 
   state.blackIsNext = true;
-  state = moves.makeMove(state, 3, 1).gameState;
+  moves.makeMove(states, 3, 1);
+  state = states[states.length - 1]
   expect(state.capturedWhite).toBe(4);
   expect(state.capturedBlack).toBe(0);
   expect(state.stoneCnt).toBe(8);
@@ -250,9 +261,10 @@ test('capture on the edge 3', () => {
   WBBBW
   WB.BW
   `;
-  let state = makeState(initial, false);
+  let states = [makeState(initial, false)];
 
-  state = moves.makeMove(state, 4, 2).gameState;
+  moves.makeMove(states, 4, 2);
+  let state = states[states.length - 1]
   expect(state.capturedBlack).toBe(5);
   expect(state.capturedWhite).toBe(0);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
@@ -272,14 +284,14 @@ test('no liberties in the center', () => {
   WB.W.
   .WW..
   `;
-  let state = makeState(initial, true);
+  let states = [makeState(initial, true)];
 
-  state = moves.makeMove(state, 3, 2).gameState;
+  moves.makeMove(states, 3, 2);
+  let state = states[states.length - 1]
   expect(state.capturedWhite).toBe(0);
 
   state.blackIsNext = true;
-  let error = moves.makeMove(state, 2, 2).error;
-  expect(error).toBe("field has no liberties");
+  expect(() => moves.makeMove(states, 2, 2)).toThrowError("field has no liberties");
 });
 
 test('no liberties in the corner', () => {
@@ -287,11 +299,9 @@ test('no liberties in the corner', () => {
   .B
   B.
   `;
-  let state = makeState(initial, false);
+  let states = [makeState(initial, false)];
 
-  let error = moves.makeMove(state, 0, 0).error;
-  expect(error).toBe("field has no liberties");
+  expect(() => moves.makeMove(states, 0, 0)).toThrowError("field has no liberties");
 
-  error = moves.makeMove(state, 1, 1).error;
-  expect(error).toBe("field has no liberties");
+  expect(() => moves.makeMove(states, 1, 1)).toThrowError("field has no liberties");
 });

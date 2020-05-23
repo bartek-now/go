@@ -86,12 +86,12 @@ class Game extends React.Component {
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     if (gameState.blackIsNext !== gameInfo.selfIsBlack) return;
 
-    let result = moves.makeMove(gameState, row, col);
-    if (result.error) {
-      alert("Can't move there: " + result.error);
+    try {
+      moves.makeMove(gameInfo.gameStates, row, col);
+    } catch (err) {
+      alert("Can't make the move: " + err.message);
       return;
     }
-    gameInfo.gameStates.push(result.gameState);
     this.setState(gameInfo);
     saveGame(gameInfo);
   }

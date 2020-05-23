@@ -3,6 +3,7 @@ export function constructInitialState(size) {
     return {
         size: size,
         board: [],
+        stoneCnt: 0,
         status: "ONGOING",
         capturedBlack : 0,
         capturedWhite : 0,
@@ -97,6 +98,7 @@ export function makeMove(state, row, col) {
     let moveColor = state.blackIsNext ? 1 : 2;
     let capturingColor = state.blackIsNext ? 2 : 1;
     setField(newState.board, row, col, moveColor);
+    newState.stoneCnt++;
 
     // Try capturing.
     let captured = 0;
@@ -104,6 +106,7 @@ export function makeMove(state, row, col) {
     captured += tryCapture(size, newState.board, row, col + 1, capturingColor);
     captured += tryCapture(size, newState.board, row - 1, col, capturingColor);
     captured += tryCapture(size, newState.board, row + 1, col, capturingColor);
+    newState.stoneCnt -= captured;
     if (capturingColor === 1) {
         newState.capturedBlack += captured;
     } else {

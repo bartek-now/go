@@ -4,25 +4,33 @@ function cleanBoardStr(str) {
   return str.trim().split(/\s+/).join("\n");
 }
 
-function getBoardFromStr(str) {
-  let strRows = str.trim().split(/\s+/);
+function makeState(boardStr, blackIsNext) {
+  let strRows = boardStr.trim().split(/\s+/);
   let size = strRows.length;
   let board = [];
+  let cnt = 0;
   for (let i = 0; i < size; ++i) {
     let row = [];
     for (let j = 0; j < size; ++j) {
       let char = strRows[i].charAt(j);
       if (char == 'B') {
         row[j] = 1;
+        ++cnt;
       } else if (char == 'W') {
         row[j] = 2;
+        ++cnt;
       }
     }
     if (row.length) {
       board[i] = row;
     }
   }
-  return {board: board, size: size};
+
+  let state = moves.constructInitialState(size);
+  state.board = board;
+  state.stoneCnt = cnt;
+  state.blackIsNext = blackIsNext;
+  return state;
 }
 
 function getBoardStrFromState(state) {
@@ -39,14 +47,6 @@ function getBoardStrFromState(state) {
   return strRows.join("\n");
 }
 
-function makeState(boardStr, blackIsNext) {
-  let ret = getBoardFromStr(boardStr);
-  let state = moves.constructInitialState(ret.size);
-  state.board = ret.board;
-  state.blackIsNext = blackIsNext;
-  return state;
-}
-
 test('valid move', () => {
   let initial = `
   ...
@@ -59,6 +59,7 @@ test('valid move', () => {
   expect(state.blackIsNext).toBe(true);
   expect(state.capturedWhite).toBe(0);
   expect(state.capturedBlack).toBe(0);
+  expect(state.stoneCnt).toBe(2);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   W..
   .B.
@@ -69,6 +70,7 @@ test('valid move', () => {
   expect(state.blackIsNext).toBe(false);
   expect(state.capturedWhite).toBe(0);
   expect(state.capturedBlack).toBe(0);
+  expect(state.stoneCnt).toBe(3);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   W..
   .B.
@@ -104,11 +106,13 @@ test('capture in the center', () => {
 
   state = moves.makeMove(state, 4, 3).gameState;
   expect(state.capturedWhite).toBe(0);
+  expect(state.stoneCnt).toBe(15);
 
   state.blackIsNext = true;
   state = moves.makeMove(state, 3, 3).gameState;
   expect(state.capturedWhite).toBe(5);
   expect(state.capturedBlack).toBe(0);
+  expect(state.stoneCnt).toBe(11);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   ..B..
   .B.B.
@@ -130,11 +134,13 @@ test('capture 3 groups in the center', () => {
 
   state = moves.makeMove(state, 3, 2).gameState;
   expect(state.capturedBlack).toBe(0);
+  expect(state.stoneCnt).toBe(13);
 
   state.blackIsNext = false;
   state = moves.makeMove(state, 2, 2).gameState;
   expect(state.capturedBlack).toBe(4);
   expect(state.capturedWhite).toBe(0);
+  expect(state.stoneCnt).toBe(10);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   ..W..
   .W.W.
@@ -157,6 +163,7 @@ test('capture from within', () => {
   state = moves.makeMove(state, 2, 2).gameState;
   expect(state.capturedWhite).toBe(8);
   expect(state.capturedBlack).toBe(0);
+  expect(state.stoneCnt).toBe(17);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   BBBBB
   B...B
@@ -175,11 +182,13 @@ test('capture in the corner', () => {
 
   state = moves.makeMove(state, 1, 0).gameState;
   expect(state.capturedWhite).toBe(0);
+  expect(state.stoneCnt).toBe(2);
 
   state.blackIsNext = true;
   state = moves.makeMove(state, 0, 1).gameState;
   expect(state.capturedWhite).toBe(1);
   expect(state.capturedBlack).toBe(0);
+  expect(state.stoneCnt).toBe(2);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   .B
   B.
@@ -198,7 +207,7 @@ test('capture on the edge', () => {
   state = moves.makeMove(state, 0, 3).gameState;
   expect(state.capturedBlack).toBe(4);
   expect(state.capturedWhite).toBe(0);
-
+  expect(state.stoneCnt).toBe(8);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   .WWW
   W...
@@ -218,11 +227,13 @@ test('capture on the edge 2', () => {
 
   state = moves.makeMove(state, 3, 0).gameState;
   expect(state.capturedWhite).toBe(0);
+  expect(state.stoneCnt).toBe(11);
 
   state.blackIsNext = true;
   state = moves.makeMove(state, 3, 1).gameState;
   expect(state.capturedWhite).toBe(4);
   expect(state.capturedBlack).toBe(0);
+  expect(state.stoneCnt).toBe(8);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   .B..
   B.B.

@@ -1,6 +1,7 @@
 import * as moves from './moves';
 import React from 'react';
 import ReactDOM from 'react-dom';
+import {Circle, Layer, Line, Rect, Stage} from 'react-konva';
 import {
   BrowserRouter as Router,
   Link,
@@ -96,31 +97,49 @@ class Game extends React.Component {
     saveGame(gameInfo);
   }
 
-  renderSquare(row, col) {
-    let gameInfo = this.state;
-    let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
-    let char = ["", "B", "W"][moves.getField(gameState.board, row, col)];
-    return <Square value={char} onClick={() => this.handleClick(row, col)} />;
-  }
-
-  renderRow(row) {
-    let gameInfo = this.state;
-    let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
-    let arr = []
-    for (let i = 0; i < gameState.size; i++) {
-      arr.push(this.renderSquare(row, i));
-    }
-    return React.createElement("div", {className:"board-row"}, ...arr);
-  }
-
   renderAllRows() {
     let gameInfo = this.state;
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
-    let arr = []
-    for (let i = 0; i < gameState.size; i++) {
-      arr.push(this.renderRow(i));
+    let size = gameState.size;
+
+    const fieldSize = 35;
+    let arr = [];
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
+        let x = fieldSize * col;
+        let y = fieldSize * row;
+        let xm = x + fieldSize / 2;
+        let ym = y + fieldSize / 2;
+        let xe = x + fieldSize;
+        let ye = y + fieldSize;
+        let handler = () => this.handleClick(row, col);
+
+        arr.push(<Rect x={x} y={y} width={fieldSize} height={fieldSize} fill={"saddlebrown"} onClick={handler} />);
+
+        if (row > 0) arr.push(<Line points={[xm, y, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
+        if (row < size - 1) arr.push(<Line points={[xm, ye, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
+        if (col > 0) arr.push(<Line points={[x, ym, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
+        if (col < size - 1) arr.push(<Line points={[xe, ym, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
+
+
+        let color = [null, "black", "white"][moves.getField(gameState.board, row, col)];
+        if (color) {
+          x += fieldSize / 2;
+          y += fieldSize / 2;
+          arr.push(<Circle x={xm} y={ym} radius={13} fill={color} strokeWidth={1} stroke={"gray"} onClick={handler} />);
+        }
+      }
     }
-    return React.createElement("div", null, ...arr);
+    let boardSize = size * fieldSize;
+    return (
+      <div>
+        <Stage width={boardSize} height={boardSize}>
+          <Layer>
+            {arr}
+          </Layer>
+        </Stage>
+      </div>
+    );
   }
 
   render() {

@@ -84,6 +84,17 @@ function tryCapture(size, board, row, col, capturingColor) {
     return captured;
 }
 
+function boardsAreEqual(size, board1, board2) {
+    for (let i = 0; i < size; ++i) {
+        for (let j = 0; j < size; ++j) {
+            if (getField(board1, i, j) !== getField(board2, i, j)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 // Returns an object that either has a new |board| (and independent copy of the input board, with
 // the move applied), or |error|.
 export function makeMove(gameStates, row, col) {
@@ -120,5 +131,17 @@ export function makeMove(gameStates, row, col) {
     if (!hasLiberties(size, newState.board, visitState, row, col, moveColor))
         throw Error("field has no liberties");
 
+    // Now check for the Ko rule, by making sure that the board state isn't repeated, while the same
+    // player has a turn (hence check every two states).
+    for (let i = gameStates.length - 2; i >= 0; i -= 2) {
+        let oldState = gameStates[i];
+        // Checked the stone count first as an optimization, then comapare the entire board.
+        if (newState.stoneCnt === oldState.stoneCnt && boardsAreEqual(size, newState.board, oldState.board)) {
+            if (i === gameStates.length - 2) throw Error("violated Ko rule");
+            throw Error("violated SuperKo rule");
+        }
+    }
+
+    // Now that we verified the move is valid, commit it to the state history.
     gameStates.push(newState);
 }

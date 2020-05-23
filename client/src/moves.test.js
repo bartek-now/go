@@ -287,7 +287,7 @@ test('no liberties in the center', () => {
   let states = [makeState(initial, true)];
 
   moves.makeMove(states, 3, 2);
-  let state = states[states.length - 1]
+  let state = states[states.length - 1];
   expect(state.capturedWhite).toBe(0);
 
   state.blackIsNext = true;
@@ -304,4 +304,78 @@ test('no liberties in the corner', () => {
   expect(() => moves.makeMove(states, 0, 0)).toThrowError("field has no liberties");
 
   expect(() => moves.makeMove(states, 1, 1)).toThrowError("field has no liberties");
+});
+
+test('Ko', () => {
+  let initial = `
+  .BW.
+  BW.W
+  .BW.
+  ....
+  `;
+  let states = [makeState(initial, true)];
+
+  moves.makeMove(states, 1, 2);
+  let state = states[states.length - 1];
+  expect(state.capturedWhite).toBe(1);
+
+  expect(() => moves.makeMove(states, 1, 1)).toThrowError("violated Ko rule");
+});
+
+test('not Ko 1-2', () => {
+  let initial = `
+  .....
+  .BBW.
+  BW.BW
+  .BBW.
+  .....
+  `;
+  let states = [makeState(initial, false)];
+
+  moves.makeMove(states, 2, 2);
+  let state = states[states.length - 1];
+  expect(state.capturedBlack).toBe(1);
+
+  moves.makeMove(states, 2, 3);
+  state = states[states.length - 1];
+  expect(state.capturedWhite).toBe(2);
+  expect(state.capturedBlack).toBe(1);
+});
+
+test('not Ko 2-1', () => {
+  let initial = `
+  .....
+  .BBW.
+  BWW.W
+  .BBW.
+  .....
+  `;
+  let states = [makeState(initial, true)];
+
+  moves.makeMove(states, 2, 3);
+  let state = states[states.length - 1];
+  expect(state.capturedWhite).toBe(2);
+
+  moves.makeMove(states, 2, 2);
+  state = states[states.length - 1];
+  expect(state.capturedBlack).toBe(1);
+  expect(state.capturedWhite).toBe(2);
+});
+
+test('Superko', () => {
+  let initial = `
+  B.BW.
+  BBWW.
+  BW.W.
+  BBWW.
+  B.BW.
+  `;
+  let states = [makeState(initial, false)];
+
+  moves.makeMove(states, 0, 1);
+  moves.makeMove(states, 2, 2);
+  moves.makeMove(states, 4, 1);
+  moves.makeMove(states, 0, 2);
+  moves.makeMove(states, 2, 1);
+  expect(() => moves.makeMove(states, 4, 2)).toThrowError("violated SuperKo rule");
 });

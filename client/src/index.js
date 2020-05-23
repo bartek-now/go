@@ -102,7 +102,7 @@ class Game extends React.Component {
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let size = gameState.size;
 
-    const fieldSize = 35;
+    const fieldSize = 70;
     let arr = [];
     for (let row = 0; row < size; row++) {
       for (let col = 0; col < size; col++) {
@@ -114,7 +114,7 @@ class Game extends React.Component {
         let ye = y + fieldSize;
         let handler = () => this.handleClick(row, col);
 
-        arr.push(<Rect x={x} y={y} width={fieldSize} height={fieldSize} fill={"saddlebrown"} onClick={handler} />);
+        arr.push(<Rect x={x} y={y} width={fieldSize} height={fieldSize} fill={"#A06800"} onClick={handler} />);
 
         if (row > 0) arr.push(<Line points={[xm, y, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
         if (row < size - 1) arr.push(<Line points={[xm, ye, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
@@ -126,7 +126,7 @@ class Game extends React.Component {
         if (color) {
           x += fieldSize / 2;
           y += fieldSize / 2;
-          arr.push(<Circle x={xm} y={ym} radius={13} fill={color} strokeWidth={1} stroke={"gray"} onClick={handler} />);
+          arr.push(<Circle x={xm} y={ym} radius={26} fill={color} strokeWidth={1} stroke={"gray"} onClick={handler} />);
         }
       }
     }

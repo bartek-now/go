@@ -53,10 +53,22 @@ const saveFreshGame = async (gameSeed) => {
   return body;
 }
 
+const millisToHHMMSS = (millis) => {
+  let secs = Math.floor(millis / 1000);
+  let mins = Math.floor(secs / 60);
+  let hours = Math.floor(mins / 60);
+  secs %= 60;
+  mins %= 60;
+  secs = (secs < 10 ? "0" : "") + secs.toString();
+  mins = (mins < 10 ? "0" : "") + mins.toString();
+  return hours.toString() + ":" + mins + ":" + secs;
+}
+
 class Game extends React.Component {
   constructor(props) {
     super(props);
     this.continuouslyLoadGame();
+    this.continuouslyRefresh();
   }
 
   continuouslyLoadGame() {
@@ -68,10 +80,16 @@ class Game extends React.Component {
         .catch(reason => alert('Failed to load the game from DB: ' + reason));
   }
 
+  continuouslyRefresh() {
+    // Reload state to trigger re-draw, to update elapsed time.
+    this.setState(this.state);
+    setTimeout(() => this.continuouslyRefresh(), 500);
+  }
+
   initializeStateFromDb(gameInfo) {
-    if (!this.state ||
-      gameInfo.gameStates.length > this.state.gameStates.length)
+    if (!this.state || gameInfo.gameStates.length > this.state.gameStates.length) {
       this.setState(gameInfo);
+    }
   }
 
   handleClick(row, col) {
@@ -141,6 +159,7 @@ class Game extends React.Component {
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let player = 'Hello ' + gameInfo.selfName + ', you are playing as ' + (gameInfo.selfIsBlack ? 'Black' : 'White') + ' against ' + gameInfo.opponentName;
     let status = gameInfo.selfIsBlack === gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
+    status += " (" + millisToHHMMSS(Date.now() - gameState.timestamp) + ")";
     return (
       <div>
         <div className="status">{player}</div>

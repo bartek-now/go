@@ -8,6 +8,7 @@ export function constructInitialState(size) {
         capturedBlack : 0,
         capturedWhite : 0,
         blackIsNext: true,
+        timestamp: Date.now(),
     };
 }
 
@@ -143,5 +144,6 @@ export function makeMove(gameStates, row, col) {
     }
 
     // Now that we verified the move is valid, commit it to the state history.
+    newState.timestamp = Date.now();
     gameStates.push(newState);
 }

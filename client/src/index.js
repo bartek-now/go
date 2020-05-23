@@ -112,19 +112,20 @@ class Game extends React.Component {
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let size = gameState.size;
 
-    const fieldSize = 70;
+    const fieldSizePx = 70;
+    const stoneRadiusRatio = 0.36;
     let arr = [];
     for (let row = 0; row < size; row++) {
       for (let col = 0; col < size; col++) {
-        let x = fieldSize * col;
-        let y = fieldSize * row;
-        let xm = x + fieldSize / 2;
-        let ym = y + fieldSize / 2;
-        let xe = x + fieldSize;
-        let ye = y + fieldSize;
+        let x = fieldSizePx * col;
+        let y = fieldSizePx * row;
+        let xm = x + fieldSizePx / 2;
+        let ym = y + fieldSizePx / 2;
+        let xe = x + fieldSizePx;
+        let ye = y + fieldSizePx;
         let handler = () => this.handleClick(row, col);
 
-        arr.push(<Rect x={x} y={y} width={fieldSize} height={fieldSize} fill={"#A06800"} onClick={handler} />);
+        arr.push(<Rect x={x} y={y} width={fieldSizePx} height={fieldSizePx} fill={"#A06800"} onClick={handler} />);
 
         if (row > 0) arr.push(<Line points={[xm, y, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
         if (row < size - 1) arr.push(<Line points={[xm, ye, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
@@ -134,16 +135,16 @@ class Game extends React.Component {
 
         let color = [null, "black", "white"][moves.getField(gameState.board, row, col)];
         if (color) {
-          x += fieldSize / 2;
-          y += fieldSize / 2;
-          arr.push(<Circle x={xm} y={ym} radius={26} fill={color} strokeWidth={1} stroke={"gray"} onClick={handler} />);
+          x += fieldSizePx / 2;
+          y += fieldSizePx / 2;
+          arr.push(<Circle x={xm} y={ym} radius={fieldSizePx * stoneRadiusRatio} fill={color} strokeWidth={1} stroke={"gray"} onClick={handler} />);
         }
       }
     }
-    let boardSize = size * fieldSize;
+    let boardSizePx = size * fieldSizePx;
     return (
       <div>
-        <Stage width={boardSize} height={boardSize}>
+        <Stage width={boardSizePx} height={boardSizePx}>
           <Layer>
             {arr}
           </Layer>

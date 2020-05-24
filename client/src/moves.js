@@ -110,7 +110,8 @@ function traverseEmpty(size, board, visitState, row, col, first=true) {
     traverseEmpty(size, board, visitState, row - 1, col, false);
 }
 
-function markEmptyTerritory(size, board) {
+// Export for testing.
+export function markEmptyTerritory(size, board) {
     let blackTerritory = [];
     let whiteTerritory = [];
     for (let i = 0; i < size; ++i) {

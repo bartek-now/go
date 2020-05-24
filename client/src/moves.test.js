@@ -35,9 +35,7 @@ function makeState(boardStr, blackIsNext) {
   return state;
 }
 
-function getBoardStrFromState(state) {
-  let board = state.board;
-  let size = state.size;
+function getBoardStr(size, board) {
   let strRows = [];
   for (let i = 0; i < size; ++i) {
     let str = "";
@@ -47,6 +45,10 @@ function getBoardStrFromState(state) {
     strRows.push(str);
   }
   return strRows.join("\n");
+}
+
+function getBoardStrFromState(state) {
+  return getBoardStr(state.size, state.board);
 }
 
 test('valid move', () => {
@@ -394,4 +396,48 @@ test('Superko', () => {
   moves.makeMove(states, 0, 2);
   moves.makeMove(states, 2, 1);
   expect(() => moves.makeMove(states, 4, 2)).toThrowError("violated SuperKo rule");
+});
+
+test('territory', () => {
+  let initial = `
+  ..BW...
+  BWW.WW.
+  W...W.W
+  W.W...W
+  BWBW.W.
+  .B.BW.B
+  ...BW..
+  `;
+  let states = [makeState(initial, false)];
+  let state = states[0];
+
+  let territory = moves.markEmptyTerritory(state.size, state.board);
+  expect(getBoardStr(state.size, territory)).toBe(cleanBoardStr(`
+  ....WWW
+  ...W..W
+  .WWW.W.
+  .W.WWW.
+  ....W..
+  B.B....
+  BBB....
+  `));
+});
+
+test('pass', () => {
+  let initial = `
+  W..
+  .B.
+  ..B
+  `;
+  let states = [makeState(initial, true)];
+
+  moves.pass(states);
+  let state = states[states.length - 1]
+  expect(state.blackIsNext).toBe(false);
+
+  moves.pass(states);
+  state = states[states.length - 1]
+  expect(state.blackIsNext).toBe(true);
+  expect(state.blackStonesOnBoard).toBe(2);
+  expect(state.whiteStonesOnBoard).toBe(1);
 });

@@ -98,7 +98,6 @@ const loadUserFromDb = (userLogin) => {
       let games = [];
       for (let i = 0; i < result2.rows.length; ++i) {
         let row = result2.rows[i];
-        console.log(row);
         games.push({
           selfPlayerId: row.player_id,
           selfIsBlack: row.is_black,
@@ -141,7 +140,6 @@ app.get('/api/loaduser/:userLogin', (req, res) => {
   console.log("Loading user profile:", req.params.userLogin);
   loadUserFromDb(req.params.userLogin)
       .then(userInfo => {
-        console.log("Successfully read user profile from DB: ", userInfo);
         res.send(userInfo);
       })
       .catch(reason => {
@@ -155,7 +153,6 @@ app.get('/api/loadgame/:playerId', (req, res) => {
   loadGameFromDb(req.params.playerId)
       .then(gameInfo => {
         if (gameInfo) {
-          console.log("Successfully read game from DB: ", gameInfo);
           res.send(gameInfo);
         } else{
           console.log("No read game from DB");
@@ -163,13 +160,13 @@ app.get('/api/loadgame/:playerId', (req, res) => {
         }
       })
       .catch(reason => {
-        console.log("Failure when reading game from DB: ", reason);
+        console.log("Failure when reading game from DB:", reason);
         res.status(500).send({message: reason.toString()});
       });
 });
 
 app.post('/api/savegame/:gameId', (req, res) => {
-  console.log("Saving game ID:", req.params.gameId, "\n", req.body);
+  console.log("Saving game ID:", req.params.gameId);
   let gameState = req.body;
   saveGameToDb(req.params.gameId, gameState)
       .then(() => {
@@ -177,7 +174,7 @@ app.post('/api/savegame/:gameId', (req, res) => {
         res.send({message: "OK"});
       })
       .catch(reason => {
-        console.log("Failure when writing game to DB: ", reason);
+        console.log("Failure when writing game to DB:", reason);
         res.status(500).send({message: reason.toString()});
       });
 });
@@ -187,7 +184,7 @@ function getRandomInt(max) {
 }
 
 app.post('/api/newgame/', (req, res) => {
-  console.log("Creating a new game ID:\n", req.body);
+  console.log("Creating a new game ID");
   let randState = {
     gameId: getRandomInt(100000),
     selfPlayerId: getRandomInt(100000),
@@ -201,7 +198,7 @@ app.post('/api/newgame/', (req, res) => {
         res.send({playerId: randState.selfPlayerId});
       })
       .catch(reason => {
-        console.log("Failure when inserting a new game into DB: ", reason);
+        console.log("Failure when inserting a new game into DB:", reason);
         res.status(500).send({message: reason.toString()});
       });
 });

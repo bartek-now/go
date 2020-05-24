@@ -8,17 +8,18 @@ function makeState(boardStr, blackIsNext) {
   let strRows = boardStr.trim().split(/\s+/);
   let size = strRows.length;
   let board = [];
-  let cnt = 0;
+  let blackCnt = 0;
+  let whiteCnt = 0;
   for (let i = 0; i < size; ++i) {
     let row = [];
     for (let j = 0; j < size; ++j) {
       let char = strRows[i].charAt(j);
       if (char == 'B') {
         row[j] = 1;
-        ++cnt;
+        ++blackCnt;
       } else if (char == 'W') {
         row[j] = 2;
-        ++cnt;
+        ++whiteCnt;
       }
     }
     if (row.length) {
@@ -28,7 +29,8 @@ function makeState(boardStr, blackIsNext) {
 
   let state = moves.constructInitialState(size);
   state.board = board;
-  state.stoneCnt = cnt;
+  state.blackStonesOnBoard = blackCnt;
+  state.whiteStonesOnBoard = whiteCnt;
   state.blackIsNext = blackIsNext;
   return state;
 }
@@ -58,9 +60,10 @@ test('valid move', () => {
   moves.makeMove(states, 0, 0);
   let state = states[states.length - 1]
   expect(state.blackIsNext).toBe(true);
-  expect(state.capturedWhite).toBe(0);
-  expect(state.capturedBlack).toBe(0);
-  expect(state.stoneCnt).toBe(2);
+  expect(state.whiteStonesOnBoard).toBe(1);
+  expect(state.blackStonesOnBoard).toBe(1);
+  expect(state.whiteStonesCaptured).toBe(0);
+  expect(state.blackStonesCaptured).toBe(0);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   W..
   .B.
@@ -70,9 +73,10 @@ test('valid move', () => {
   moves.makeMove(states, 2, 2);
   state = states[states.length - 1]
   expect(state.blackIsNext).toBe(false);
-  expect(state.capturedWhite).toBe(0);
-  expect(state.capturedBlack).toBe(0);
-  expect(state.stoneCnt).toBe(3);
+  expect(state.whiteStonesOnBoard).toBe(1);
+  expect(state.blackStonesOnBoard).toBe(2);
+  expect(state.whiteStonesCaptured).toBe(0);
+  expect(state.blackStonesCaptured).toBe(0);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   W..
   .B.
@@ -107,15 +111,17 @@ test('capture in the center', () => {
 
   moves.makeMove(states, 4, 3);
   let state = states[states.length - 1]
-  expect(state.capturedWhite).toBe(0);
-  expect(state.stoneCnt).toBe(15);
+  expect(state.whiteStonesOnBoard).toBe(5);
+  expect(state.blackStonesOnBoard).toBe(10);
+  expect(state.whiteStonesCaptured).toBe(0);
 
   state.blackIsNext = true;
   moves.makeMove(states, 3, 3);
   state = states[states.length - 1]
-  expect(state.capturedWhite).toBe(5);
-  expect(state.capturedBlack).toBe(0);
-  expect(state.stoneCnt).toBe(11);
+  expect(state.whiteStonesOnBoard).toBe(0);
+  expect(state.blackStonesOnBoard).toBe(11);
+  expect(state.whiteStonesCaptured).toBe(5);
+  expect(state.blackStonesCaptured).toBe(0);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   ..B..
   .B.B.
@@ -137,15 +143,17 @@ test('capture 3 groups in the center', () => {
 
   moves.makeMove(states, 3, 2);
   let state = states[states.length - 1]
-  expect(state.capturedBlack).toBe(0);
-  expect(state.stoneCnt).toBe(13);
+  expect(state.whiteStonesOnBoard).toBe(9);
+  expect(state.blackStonesOnBoard).toBe(4);
+  expect(state.blackStonesCaptured).toBe(0);
 
   state.blackIsNext = false;
   moves.makeMove(states, 2, 2);
   state = states[states.length - 1]
-  expect(state.capturedBlack).toBe(4);
-  expect(state.capturedWhite).toBe(0);
-  expect(state.stoneCnt).toBe(10);
+  expect(state.whiteStonesOnBoard).toBe(10);
+  expect(state.blackStonesOnBoard).toBe(0);
+  expect(state.blackStonesCaptured).toBe(4);
+  expect(state.whiteStonesCaptured).toBe(0);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   ..W..
   .W.W.
@@ -167,9 +175,10 @@ test('capture from within', () => {
 
   moves.makeMove(states, 2, 2);
   let state = states[states.length - 1]
-  expect(state.capturedWhite).toBe(8);
-  expect(state.capturedBlack).toBe(0);
-  expect(state.stoneCnt).toBe(17);
+  expect(state.whiteStonesOnBoard).toBe(0);
+  expect(state.blackStonesOnBoard).toBe(17);
+  expect(state.whiteStonesCaptured).toBe(8);
+  expect(state.blackStonesCaptured).toBe(0);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   BBBBB
   B...B
@@ -188,15 +197,17 @@ test('capture in the corner', () => {
 
   moves.makeMove(states, 1, 0);
   let state = states[states.length - 1]
-  expect(state.capturedWhite).toBe(0);
-  expect(state.stoneCnt).toBe(2);
+  expect(state.whiteStonesOnBoard).toBe(1);
+  expect(state.blackStonesOnBoard).toBe(1);
+  expect(state.whiteStonesCaptured).toBe(0);
 
   state.blackIsNext = true;
   moves.makeMove(states, 0, 1);
   state = states[states.length - 1]
-  expect(state.capturedWhite).toBe(1);
-  expect(state.capturedBlack).toBe(0);
-  expect(state.stoneCnt).toBe(2);
+  expect(state.whiteStonesOnBoard).toBe(0);
+  expect(state.blackStonesOnBoard).toBe(2);
+  expect(state.whiteStonesCaptured).toBe(1);
+  expect(state.blackStonesCaptured).toBe(0);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   .B
   B.
@@ -214,9 +225,10 @@ test('capture on the edge', () => {
 
   moves.makeMove(states, 0, 3);
   let state = states[states.length - 1]
-  expect(state.capturedBlack).toBe(4);
-  expect(state.capturedWhite).toBe(0);
-  expect(state.stoneCnt).toBe(8);
+  expect(state.whiteStonesOnBoard).toBe(8);
+  expect(state.blackStonesOnBoard).toBe(0);
+  expect(state.blackStonesCaptured).toBe(4);
+  expect(state.whiteStonesCaptured).toBe(0);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   .WWW
   W...
@@ -236,15 +248,17 @@ test('capture on the edge 2', () => {
 
   moves.makeMove(states, 3, 0);
   let state = states[states.length - 1]
-  expect(state.capturedWhite).toBe(0);
-  expect(state.stoneCnt).toBe(11);
+  expect(state.whiteStonesOnBoard).toBe(4);
+  expect(state.blackStonesOnBoard).toBe(7);
+  expect(state.whiteStonesCaptured).toBe(0);
 
   state.blackIsNext = true;
   moves.makeMove(states, 3, 1);
   state = states[states.length - 1]
-  expect(state.capturedWhite).toBe(4);
-  expect(state.capturedBlack).toBe(0);
-  expect(state.stoneCnt).toBe(8);
+  expect(state.whiteStonesOnBoard).toBe(0);
+  expect(state.blackStonesOnBoard).toBe(8);
+  expect(state.whiteStonesCaptured).toBe(4);
+  expect(state.blackStonesCaptured).toBe(0);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   .B..
   B.B.
@@ -265,8 +279,10 @@ test('capture on the edge 3', () => {
 
   moves.makeMove(states, 4, 2);
   let state = states[states.length - 1]
-  expect(state.capturedBlack).toBe(5);
-  expect(state.capturedWhite).toBe(0);
+  expect(state.blackStonesOnBoard).toBe(0);
+  expect(state.whiteStonesOnBoard).toBe(10);
+  expect(state.blackStonesCaptured).toBe(5);
+  expect(state.whiteStonesCaptured).toBe(0);
   expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
   .....
   .....
@@ -288,7 +304,7 @@ test('no liberties in the center', () => {
 
   moves.makeMove(states, 3, 2);
   let state = states[states.length - 1];
-  expect(state.capturedWhite).toBe(0);
+  expect(state.whiteStonesCaptured).toBe(0);
 
   state.blackIsNext = true;
   expect(() => moves.makeMove(states, 2, 2)).toThrowError("field has no liberties");
@@ -317,7 +333,7 @@ test('Ko', () => {
 
   moves.makeMove(states, 1, 2);
   let state = states[states.length - 1];
-  expect(state.capturedWhite).toBe(1);
+  expect(state.whiteStonesCaptured).toBe(1);
 
   expect(() => moves.makeMove(states, 1, 1)).toThrowError("violated Ko rule");
 });
@@ -334,12 +350,12 @@ test('not Ko 1-2', () => {
 
   moves.makeMove(states, 2, 2);
   let state = states[states.length - 1];
-  expect(state.capturedBlack).toBe(1);
+  expect(state.blackStonesCaptured).toBe(1);
 
   moves.makeMove(states, 2, 3);
   state = states[states.length - 1];
-  expect(state.capturedWhite).toBe(2);
-  expect(state.capturedBlack).toBe(1);
+  expect(state.whiteStonesCaptured).toBe(2);
+  expect(state.blackStonesCaptured).toBe(1);
 });
 
 test('not Ko 2-1', () => {
@@ -354,12 +370,12 @@ test('not Ko 2-1', () => {
 
   moves.makeMove(states, 2, 3);
   let state = states[states.length - 1];
-  expect(state.capturedWhite).toBe(2);
+  expect(state.whiteStonesCaptured).toBe(2);
 
   moves.makeMove(states, 2, 2);
   state = states[states.length - 1];
-  expect(state.capturedBlack).toBe(1);
-  expect(state.capturedWhite).toBe(2);
+  expect(state.blackStonesCaptured).toBe(1);
+  expect(state.whiteStonesCaptured).toBe(2);
 });
 
 test('Superko', () => {

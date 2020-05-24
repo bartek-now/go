@@ -3,10 +3,11 @@ export function constructInitialState(size) {
     return {
         size: size,
         board: [],
-        stoneCnt: 0,
+        blackStonesOnBoard : 0,
+        whiteStonesOnBoard : 0,
+        blackStonesCaptured : 0,
+        whiteStonesCaptured : 0,
         status: "ONGOING",
-        capturedBlack : 0,
-        capturedWhite : 0,
         blackIsNext: true,
         territory: [],
         timestamp: Date.now(),
@@ -161,7 +162,11 @@ export function makeMove(gameStates, row, col) {
     let moveColor = state.blackIsNext ? 1 : 2;
     let capturingColor = state.blackIsNext ? 2 : 1;
     setField(newState.board, row, col, moveColor);
-    newState.stoneCnt++;
+    if (moveColor === 1) {
+        newState.blackStonesOnBoard++;
+    } else {
+        newState.whiteStonesOnBoard++;
+    }
 
     // Try capturing.
     let captured = 0;
@@ -169,11 +174,12 @@ export function makeMove(gameStates, row, col) {
     captured += tryCapture(size, newState.board, row, col + 1, capturingColor);
     captured += tryCapture(size, newState.board, row - 1, col, capturingColor);
     captured += tryCapture(size, newState.board, row + 1, col, capturingColor);
-    newState.stoneCnt -= captured;
     if (capturingColor === 1) {
-        newState.capturedBlack += captured;
+        newState.blackStonesOnBoard -= captured;
+        newState.blackStonesCaptured += captured;
     } else {
-        newState.capturedWhite += captured;
+        newState.whiteStonesOnBoard -= captured;
+        newState.whiteStonesCaptured += captured;
     }
 
     // If the newly placed stone has no liberties, it's an illegal move. Check this after capturing
@@ -187,7 +193,9 @@ export function makeMove(gameStates, row, col) {
     for (let i = gameStates.length - 2; i >= 0; i -= 2) {
         let oldState = gameStates[i];
         // Checked the stone count first as an optimization, then comapare the entire board.
-        if (newState.stoneCnt === oldState.stoneCnt && boardsAreEqual(size, newState.board, oldState.board)) {
+        if (newState.whiteStonesOnBoard === oldState.whiteStonesOnBoard
+            && newState.blackStonesOnBoard === oldState.blackStonesOnBoard
+            && boardsAreEqual(size, newState.board, oldState.board)) {
             if (i === gameStates.length - 2) throw Error("violated Ko rule");
             throw Error("violated SuperKo rule");
         }
@@ -208,9 +216,9 @@ export function pass(gameStates) {
     newState.blackIsNext = !state.blackIsNext;
 
     if (state.blackIsNext) {
-        newState.capturedBlack++;
+        newState.blackStonesCaptured++;
     } else {
-        newState.capturedWhite++;
+        newState.whiteStonesCaptured++;
     }
 
     newState.timestamp = Date.now();

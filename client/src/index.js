@@ -209,8 +209,8 @@ class Game extends React.Component {
       <div>
         <div className="status">{player}</div>
         <div className="status emphasize">{status}</div>
-        <div className="status">Black stones caputred: {gameState.capturedBlack}</div>
-        <div className="status">White stones captured: {gameState.capturedWhite}</div>
+        <div className="status">Black stones on board: {gameState.blackStonesOnBoard} (caputred: {gameState.blackStonesCaptured})</div>
+        <div className="status">White stones on board: {gameState.whiteStonesOnBoard} (caputred: {gameState.whiteStonesCaptured})</div>
         <div>
           {this.renderBoard()}
         </div>

@@ -10,3 +10,11 @@ ol, ul {
 .status {
   margin-bottom: 10px;
 }
+
+.button {
+  margin-top: 10px;
+}
+
+.emphasize {
+  font-weight: bold;
+}

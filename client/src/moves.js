@@ -198,3 +198,20 @@ export function makeMove(gameStates, row, col) {
     newState.timestamp = Date.now();
     gameStates.push(newState);
 }
+
+export function pass(gameStates) {
+    let state = gameStates[gameStates.length - 1];
+
+    // Use a JSON trick to make a deep copy of the board, before modifying it.
+    let newState = JSON.parse(JSON.stringify(state));
+    newState.blackIsNext = !state.blackIsNext;
+
+    if (state.blackIsNext) {
+        newState.capturedBlack++;
+    } else {
+        newState.capturedWhite++;
+    }
+
+    newState.timestamp = Date.now();
+    gameStates.push(newState);
+}

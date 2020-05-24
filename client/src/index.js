@@ -92,6 +92,11 @@ class Game extends React.Component {
     }
   }
 
+  persistMove(gameInfo) {
+    this.setState(gameInfo);
+    saveGame(gameInfo);
+  }
+
   handleClick(row, col) {
     let gameInfo = this.state;
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
@@ -103,11 +108,18 @@ class Game extends React.Component {
       alert("Can't make the move: " + err.message);
       return;
     }
-    this.setState(gameInfo);
-    saveGame(gameInfo);
+
+    this.persistMove(gameInfo);
   }
 
-  renderAllRows() {
+  handlePass() {
+    let gameInfo = this.state;
+    moves.pass(gameInfo.gameStates);
+
+    this.persistMove(gameInfo);
+  }
+
+  renderBoard() {
     let gameInfo = this.state;
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let size = gameState.size;
@@ -171,11 +183,14 @@ class Game extends React.Component {
     return (
       <div>
         <div className="status">{player}</div>
-        <div className="status">{status}</div>
+        <div className="status emphasize">{status}</div>
         <div className="status">Black stones caputred: {gameState.capturedBlack}</div>
         <div className="status">White stones captured: {gameState.capturedWhite}</div>
         <div>
-          {this.renderAllRows()}
+          {this.renderBoard()}
+        </div>
+        <div className="button">
+          <button onClick={() => this.handlePass()}>Pass</button>
         </div>
       </div>
     );

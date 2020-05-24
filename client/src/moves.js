@@ -253,3 +253,15 @@ White: ${newState.whiteStonesOnBoard} stones + ${newState.whiteTerritorySize} fo
     newState.timestamp = Date.now();
     gameStates.push(newState);
 }
+
+export function undo(gameStates) {
+    if (gameStates.length <= 1) {
+        throw Error("at the beginning of the game");
+    }
+    gameStates.pop();
+    // Update |timestamp|, so that the state can be accepted by other clients. They use |timestamp|
+    // to determine if the loaded state is newer than the state the client has.
+    // It also restarts the clock (this may not be desirable if we want to account time more
+    // thoroughly).
+    gameStates[gameStates.length - 1].timestamp = Date.now();
+}

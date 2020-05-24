@@ -87,7 +87,9 @@ class Game extends React.Component {
   }
 
   initializeStateFromDb(gameInfo) {
-    if (!this.state || gameInfo.gameStates.length > this.state.gameStates.length) {
+    if (!this.state
+        || gameInfo.gameStates[gameInfo.gameStates.length - 1].timestamp
+            > this.state.gameStates[this.state.gameStates.length - 1].timestamp) {
       this.setState(gameInfo);
     }
   }
@@ -99,27 +101,34 @@ class Game extends React.Component {
 
   handleFieldClick(row, col) {
     let gameInfo = this.state;
-
     try {
       moves.makeMove(gameInfo.gameStates, row, col);
     } catch (err) {
       alert("Can't make the move: " + err.message);
       return;
     }
-
     this.persistState(gameInfo);
   }
 
   handlePassPress() {
     let gameInfo = this.state;
-
     try {
       moves.pass(gameInfo.gameStates);
     } catch (err) {
-      alert("Can't make the move: " + err.message);
+      alert("Can't pass: " + err.message);
       return;
     }
+    this.persistState(gameInfo);
+  }
 
+  handleUndoPress() {
+    let gameInfo = this.state;
+    try {
+      moves.undo(gameInfo.gameStates);
+    } catch (err) {
+      alert("Can't undo the move: " + err.message);
+      return;
+    }
     this.persistState(gameInfo);
   }
 
@@ -225,6 +234,7 @@ class Game extends React.Component {
         </div>
         <div className="button">
           <button onClick={() => this.handlePassPress()} disabled={gameState.status || gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
+          <button onClick={() => this.handleUndoPress()} disabled={gameInfo.gameStates.length <= 1 || gameState.blackIsNext === gameInfo.selfIsBlack}>Undo</button>
           <button onClick={() => this.handleShowHideTerritory()}>{gameInfo.showTerritory ? 'Hide' : 'Show'} territory</button>
         </div>
       </div>

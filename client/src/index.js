@@ -82,7 +82,7 @@ class Game extends React.Component {
 
   continuouslyRefresh() {
     // Reload state to trigger re-draw, to update elapsed time.
-    this.setState(this.state);
+    if (this.state) this.setState(this.state);
     setTimeout(() => this.continuouslyRefresh(), 500);
   }
 
@@ -137,25 +137,26 @@ class Game extends React.Component {
         let xe = x + fieldSizePx;
         let ye = y + fieldSizePx;
         let handler = () => this.handleClick(row, col);
+        let key = row.toString() + ":" + col.toString();
+        
+        arr.push(<Rect key={"f"+key} x={x} y={y} width={fieldSizePx} height={fieldSizePx} fill={"#A06800"} onClick={handler} />);
 
-        arr.push(<Rect x={x} y={y} width={fieldSizePx} height={fieldSizePx} fill={"#A06800"} onClick={handler} />);
-
-        if (row > 0) arr.push(<Line points={[xm, y, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
-        if (row < size - 1) arr.push(<Line points={[xm, ye, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
-        if (col > 0) arr.push(<Line points={[x, ym, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
-        if (col < size - 1) arr.push(<Line points={[xe, ym, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
+        if (row > 0) arr.push(<Line key={"l1"+key} points={[xm, y, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
+        if (row < size - 1) arr.push(<Line key={"l2"+key} points={[xm, ye, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
+        if (col > 0) arr.push(<Line key={"l3"+key} points={[x, ym, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
+        if (col < size - 1) arr.push(<Line key={"l4"+key} points={[xe, ym, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
 
         let field = moves.getField(gameState.board, row, col);
         let color = [null, 'black', 'white'][field];
         if (color) {
-          arr.push(<Circle x={xm} y={ym} radius={fieldSizePx * stoneSizeRatio / 2} fill={color} stroke={"gray"} strokeWidth={1} onClick={handler} />);
+          arr.push(<Circle key={"s"+key} x={xm} y={ym} radius={fieldSizePx * stoneSizeRatio / 2} fill={color} stroke={"gray"} strokeWidth={1} onClick={handler} />);
         }
 
         /*
         if (!field) {
           color = ['gray', 'black', 'white'][moves.getField(gameState.territory, row, col)];
           let markSquareSizePx = fieldSizePx * markSquareRatio;
-          arr.push(<Rect x={xm - markSquareSizePx/2} y={ym - markSquareSizePx/2} width={markSquareSizePx} height={markSquareSizePx} fill={color} stroke={"gray"} strokeWidth={1} onClick={handler} />);
+          arr.push(<Rect key={"m"+key} x={xm - markSquareSizePx/2} y={ym - markSquareSizePx/2} width={markSquareSizePx} height={markSquareSizePx} fill={color} stroke={"gray"} strokeWidth={1} onClick={handler} />);
         }
         */
       }

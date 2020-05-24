@@ -113,7 +113,8 @@ class Game extends React.Component {
     let size = gameState.size;
 
     const fieldSizePx = 70;
-    const stoneRadiusRatio = 0.36;
+    const stoneSizeRatio = 0.72;
+    const markSquareRatio = 0.3;
     let arr = [];
     for (let row = 0; row < size; row++) {
       for (let col = 0; col < size; col++) {
@@ -132,13 +133,19 @@ class Game extends React.Component {
         if (col > 0) arr.push(<Line points={[x, ym, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
         if (col < size - 1) arr.push(<Line points={[xe, ym, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
 
-
-        let color = [null, "black", "white"][moves.getField(gameState.board, row, col)];
+        let field = moves.getField(gameState.board, row, col);
+        let color = [null, 'black', 'white'][field];
         if (color) {
-          x += fieldSizePx / 2;
-          y += fieldSizePx / 2;
-          arr.push(<Circle x={xm} y={ym} radius={fieldSizePx * stoneRadiusRatio} fill={color} strokeWidth={1} stroke={"gray"} onClick={handler} />);
+          arr.push(<Circle x={xm} y={ym} radius={fieldSizePx * stoneSizeRatio / 2} fill={color} stroke={"gray"} strokeWidth={1} onClick={handler} />);
         }
+
+        /*
+        if (!field) {
+          color = ['gray', 'black', 'white'][moves.getField(gameState.territory, row, col)];
+          let markSquareSizePx = fieldSizePx * markSquareRatio;
+          arr.push(<Rect x={xm - markSquareSizePx/2} y={ym - markSquareSizePx/2} width={markSquareSizePx} height={markSquareSizePx} fill={color} stroke={"gray"} strokeWidth={1} onClick={handler} />);
+        }
+        */
       }
     }
     let boardSizePx = size * fieldSizePx;
@@ -160,7 +167,7 @@ class Game extends React.Component {
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let player = 'Hello ' + gameInfo.selfName + ', you are playing as ' + (gameInfo.selfIsBlack ? 'Black' : 'White') + ' against ' + gameInfo.opponentName;
     let status = gameInfo.selfIsBlack === gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
-    status += " (" + millisToHHMMSS(Date.now() - gameState.timestamp) + ")";
+    status += " [" + millisToHHMMSS(Date.now() - gameState.timestamp) + "]";
     return (
       <div>
         <div className="status">{player}</div>

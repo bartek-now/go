@@ -44,7 +44,7 @@ function hasLiberties(size, board, visitState, row, col, capturingColor) {
         return false;
     }
 
-    // Check if this field was already visitState and then mark as visitState.
+    // Check if this field was already visited and mark as visited if wasn't.
     // Note, |visitState| can be set to true only for fields of |capturingColor|. 
     if (wasVisited(visitState, row, col)) return 0;
     setVisited(visitState, row, col);
@@ -83,6 +83,55 @@ function tryCapture(size, board, row, col, capturingColor) {
         if (!liberties) captured += capture(size, board, row, col, capturingColor);
     }
     return captured;
+}
+
+// Traverses the board starting with an occupied field and marks empty fields in |visitState|
+// that are connected to the starting field. You have to call this function with |first=true|.
+function traverseEmpty(size, board, visitState, row, col, first=true) {
+    // The first call always starts with an occupied field on the board. Skip the checked and setting
+    // |visitState| until we get off the occupied field.
+    if (!first) {
+      // First check if we got outside of the board, or the field is occupied.
+      if (row < 0 || row >= size || col < 0 || col >= size) return;
+      let field = getField(board, row, col);
+      if (field) return;
+  
+      // Check if this field was already visited and mark as visited if wasn't.
+      // Note, |visitState| can be set to true only for empty fields. 
+      if (wasVisited(visitState, row, col)) return 0;
+      setVisited(visitState, row, col);
+    }
+  
+    traverseEmpty(size, board, visitState, row, col + 1, false);
+    traverseEmpty(size, board, visitState, row, col - 1, false);
+    traverseEmpty(size, board, visitState, row + 1, col, false);
+    traverseEmpty(size, board, visitState, row - 1, col, false);
+}
+
+function markEmptyTerritory(size, board) {
+    let blackTerritory = [];
+    let whiteTerritory = [];
+    for (let i = 0; i < size; ++i) {
+        for (let j = 0; j < size; ++j) {
+            let field = getField(board, i, j);
+            if (field === 1) {
+                traverseEmpty(size, board, blackTerritory, i, j, true);
+            } else if (field === 2) {
+                traverseEmpty(size, board, whiteTerritory, i, j, true);
+            }
+        }
+    }
+    let territory = [];
+    for (let i = 0; i < size; ++i) {
+        for (let j = 0; j < size; ++j) {
+            if (wasVisited(blackTerritory, i, j) && !wasVisited(whiteTerritory, i, j)) {
+                setField(territory, i, j, 1);
+            } else if (!wasVisited(blackTerritory, i, j) && wasVisited(whiteTerritory, i, j)) {
+                setField(territory, i, j, 2);
+            }
+        }
+    }
+    return territory;
 }
 
 function boardsAreEqual(size, board1, board2) {
@@ -142,6 +191,8 @@ export function makeMove(gameStates, row, col) {
             throw Error("violated SuperKo rule");
         }
     }
+
+    newState.territory = markEmptyTerritory(size, newState.board);
 
     // Now that we verified the move is valid, commit it to the state history.
     newState.timestamp = Date.now();

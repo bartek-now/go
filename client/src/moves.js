@@ -8,6 +8,7 @@ export function constructInitialState(size) {
         capturedBlack : 0,
         capturedWhite : 0,
         blackIsNext: true,
+        territory: [],
         timestamp: Date.now(),
     };
 }

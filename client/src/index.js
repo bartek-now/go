@@ -170,6 +170,7 @@ class Game extends React.Component {
             height: markSquareSizePx,
             stroke: 'gray',
             strokeWidth: 1,
+            onClick: handler,
           };
           if (color) {
             rectProps.fill = color;

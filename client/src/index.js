@@ -119,13 +119,19 @@ class Game extends React.Component {
     this.persistMove(gameInfo);
   }
 
+  handleShowHideTerritory() {
+    let gameInfo = this.state;
+    gameInfo.showTerritory = !gameInfo.showTerritory;
+    this.setState(gameInfo);
+  }
+
   renderBoard() {
     let gameInfo = this.state;
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let size = gameState.size;
 
     const fieldSizePx = 70;
-    const stoneSizeRatio = 0.72;
+    const stoneSizeRatio = 0.73;
     const markSquareRatio = 0.3;
     let arr = [];
     for (let row = 0; row < size; row++) {
@@ -152,13 +158,29 @@ class Game extends React.Component {
           arr.push(<Circle key={"s"+key} x={xm} y={ym} radius={fieldSizePx * stoneSizeRatio / 2} fill={color} stroke={"gray"} strokeWidth={1} onClick={handler} />);
         }
 
-        /*
-        if (!field) {
-          color = ['gray', 'black', 'white'][moves.getField(gameState.territory, row, col)];
+
+        if (gameInfo.showTerritory && !field) {
+          color = [null, 'black', 'white'][moves.getField(gameState.territory, row, col)];
           let markSquareSizePx = fieldSizePx * markSquareRatio;
-          arr.push(<Rect key={"m"+key} x={xm - markSquareSizePx/2} y={ym - markSquareSizePx/2} width={markSquareSizePx} height={markSquareSizePx} fill={color} stroke={"gray"} strokeWidth={1} onClick={handler} />);
+          let rectProps = {
+            key: "m" + key,
+            x: xm - markSquareSizePx/2,
+            y: ym - markSquareSizePx/2,
+            width: markSquareSizePx,
+            height: markSquareSizePx,
+            stroke: 'gray',
+            strokeWidth: 1,
+          };
+          if (color) {
+            rectProps.fill = color;
+          } else {
+            rectProps.fillLinearGradientStartPoint = { x: 0, y: 0 };
+            rectProps.fillLinearGradientEndPoint = { x: markSquareSizePx, y: markSquareSizePx };
+            rectProps.fillLinearGradientColorStops = [0, 'white', 1, 'black'];
+          }
+
+          arr.push(React.createElement("Rect", rectProps, null));
         }
-        */
       }
     }
 
@@ -193,6 +215,7 @@ class Game extends React.Component {
         </div>
         <div className="button">
           <button onClick={() => this.handlePass()} disabled={gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
+          <button onClick={() => this.handleShowHideTerritory()}>{gameInfo.showTerritory ? "Hide" : "Show"} territory</button>
         </div>
       </div>
     );

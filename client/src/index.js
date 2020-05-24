@@ -92,15 +92,13 @@ class Game extends React.Component {
     }
   }
 
-  persistMove(gameInfo) {
+  persistState(gameInfo) {
     this.setState(gameInfo);
     saveGame(gameInfo);
   }
 
-  handleClick(row, col) {
+  handleFieldClick(row, col) {
     let gameInfo = this.state;
-    let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
-    if (gameState.blackIsNext !== gameInfo.selfIsBlack) return;
 
     try {
       moves.makeMove(gameInfo.gameStates, row, col);
@@ -109,14 +107,20 @@ class Game extends React.Component {
       return;
     }
 
-    this.persistMove(gameInfo);
+    this.persistState(gameInfo);
   }
 
-  handlePass() {
+  handlePassPress() {
     let gameInfo = this.state;
-    moves.pass(gameInfo.gameStates);
 
-    this.persistMove(gameInfo);
+    try {
+      moves.pass(gameInfo.gameStates);
+    } catch (err) {
+      alert("Can't make the move: " + err.message);
+      return;
+    }
+
+    this.persistState(gameInfo);
   }
 
   handleShowHideTerritory() {
@@ -144,7 +148,7 @@ class Game extends React.Component {
         let ym = y + fieldSizePx / 2;
         let xe = x + fieldSizePx;
         let ye = y + fieldSizePx;
-        let handler = () => this.handleClick(row, col);
+        let handler = (!gameState.status && gameState.blackIsNext === gameInfo.selfIsBlack) ? () => this.handleFieldClick(row, col) : null;
         let key = row.toString() + ':' + col.toString();
         
         arr.push(<Rect key={'f'+key} x={x} y={y} width={fieldSizePx} height={fieldSizePx} fill={'#A06800'} onClick={handler} />);
@@ -204,8 +208,12 @@ class Game extends React.Component {
 
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let player = 'Hello ' + gameInfo.selfName + ', you are playing as ' + (gameInfo.selfIsBlack ? 'Black' : 'White') + ' against ' + gameInfo.opponentName;
-    let status = gameInfo.selfIsBlack === gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
-    status += ' [' + millisToHHMMSS(Date.now() - gameState.timestamp) + ']';
+    let status = gameState.status
+        ? (gameInfo.selfIsBlack === (gameState.status === 1) ? 'You won!' : 'The game has ended and the winner is *not* you, sorry...')
+        : (gameInfo.selfIsBlack === gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent');
+    if (!gameState.status) {
+      status += ' [' + millisToHHMMSS(Date.now() - gameState.timestamp) + ']';
+    }
     return (
       <div>
         <div className="status">{player}</div>
@@ -216,7 +224,7 @@ class Game extends React.Component {
           {this.renderBoard()}
         </div>
         <div className="button">
-          <button onClick={() => this.handlePass()} disabled={gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
+          <button onClick={() => this.handlePassPress()} disabled={gameState.status || gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
           <button onClick={() => this.handleShowHideTerritory()}>{gameInfo.showTerritory ? 'Hide' : 'Show'} territory</button>
         </div>
       </div>

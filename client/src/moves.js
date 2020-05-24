@@ -7,8 +7,9 @@ export function constructInitialState(size) {
         whiteStonesOnBoard : 0,
         blackStonesCaptured : 0,
         whiteStonesCaptured : 0,
-        status: "ONGOING",
+        status: 0,  // 0 - ongoing, 1 - black won, 2 - white won
         blackIsNext: true,
+        passCnt : 0,
         territory: [],
         timestamp: Date.now(),
     };
@@ -152,6 +153,10 @@ function boardsAreEqual(size, board1, board2) {
 // the move applied), or |error|.
 export function makeMove(gameStates, row, col) {
     let state = gameStates[gameStates.length - 1];
+    if (state.status) {
+        throw Error("game has ended");
+    }
+
     let board = state.board;
     let size = state.size;
     if (getField(board, row, col)) throw Error("field is already occupied");
@@ -159,6 +164,7 @@ export function makeMove(gameStates, row, col) {
     // Use a JSON trick to make a deep copy of the board, before modifying it.
     let newState = JSON.parse(JSON.stringify(state));
     newState.blackIsNext = !state.blackIsNext;
+    newState.passCnt = 0;
 
     let moveColor = state.blackIsNext ? 1 : 2;
     let capturingColor = state.blackIsNext ? 2 : 1;
@@ -211,15 +217,24 @@ export function makeMove(gameStates, row, col) {
 
 export function pass(gameStates) {
     let state = gameStates[gameStates.length - 1];
+    if (state.status) {
+        throw Error("game has ended");
+    }
 
     // Use a JSON trick to make a deep copy of the board, before modifying it.
     let newState = JSON.parse(JSON.stringify(state));
+    newState.passCnt++;
     newState.blackIsNext = !state.blackIsNext;
 
     if (state.blackIsNext) {
         newState.blackStonesCaptured++;
     } else {
         newState.whiteStonesCaptured++;
+    }
+
+    // Decide if the game has ended.
+    if (newState.passCnt >= 2 && newState.blackIsNext) {
+        newState.status = 1;  // TODO: count points
     }
 
     newState.timestamp = Date.now();

@@ -15,7 +15,7 @@ const loadUser = async (userLogin) => {
   const response = await fetch('/api/loaduser/' + userLogin);
   const body = await response.json();
   if (response.status !== 200)
-    throw Error('Received status ' + response.status + ": " + body.message);
+    throw Error('Received status ' + response.status + ': ' + body.message);
   return body;
 }
 
@@ -23,7 +23,7 @@ const loadGame = async (playerId) => {
   const response = await fetch('/api/loadgame/' + playerId);
   const body = await response.json();
   if (response.status !== 200)
-    throw Error('Received status ' + response.status + ": " + body.message);
+    throw Error('Received status ' + response.status + ': ' + body.message);
   return body;
 }
 
@@ -37,7 +37,7 @@ const saveGame = async (gameInfo) => {
   });
   const body = await response.json();
   if (response.status !== 200)
-    throw Error('Received status ' + response.status + ": " + body.message);
+    throw Error('Received status ' + response.status + ': ' + body.message);
 }
 
 const saveFreshGame = async (gameSeed) => {
@@ -49,7 +49,7 @@ const saveFreshGame = async (gameSeed) => {
     body: JSON.stringify(gameSeed),
   });
   const body = await response.json();
-  if (response.status !== 200) throw Error('Received status ' + response.status + ": " + body.message);
+  if (response.status !== 200) throw Error('Received status ' + response.status + ': ' + body.message);
   return body;
 }
 
@@ -59,9 +59,9 @@ const millisToHHMMSS = (millis) => {
   let hours = Math.floor(mins / 60);
   secs %= 60;
   mins %= 60;
-  secs = (secs < 10 ? "0" : "") + secs.toString();
-  mins = (mins < 10 ? "0" : "") + mins.toString();
-  return hours.toString() + ":" + mins + ":" + secs;
+  secs = (secs < 10 ? '0' : '') + secs.toString();
+  mins = (mins < 10 ? '0' : '') + mins.toString();
+  return hours.toString() + ':' + mins + ':' + secs;
 }
 
 class Game extends React.Component {
@@ -133,6 +133,8 @@ class Game extends React.Component {
     const fieldSizePx = 70;
     const stoneSizeRatio = 0.73;
     const markSquareRatio = 0.3;
+    const stoneRadiusPx = fieldSizePx * stoneSizeRatio / 2;
+    const markSquareSizePx = fieldSizePx * markSquareRatio
     let arr = [];
     for (let row = 0; row < size; row++) {
       for (let col = 0; col < size; col++) {
@@ -143,33 +145,32 @@ class Game extends React.Component {
         let xe = x + fieldSizePx;
         let ye = y + fieldSizePx;
         let handler = () => this.handleClick(row, col);
-        let key = row.toString() + ":" + col.toString();
+        let key = row.toString() + ':' + col.toString();
         
-        arr.push(<Rect key={"f"+key} x={x} y={y} width={fieldSizePx} height={fieldSizePx} fill={"#A06800"} onClick={handler} />);
+        arr.push(<Rect key={'f'+key} x={x} y={y} width={fieldSizePx} height={fieldSizePx} fill={'#A06800'} onClick={handler} />);
 
-        if (row > 0) arr.push(<Line key={"l1"+key} points={[xm, y, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
-        if (row < size - 1) arr.push(<Line key={"l2"+key} points={[xm, ye, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
-        if (col > 0) arr.push(<Line key={"l3"+key} points={[x, ym, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
-        if (col < size - 1) arr.push(<Line key={"l4"+key} points={[xe, ym, xm, ym]} stroke={"black"} strokeWidth={1} onClick={handler} />);
+        let x1 = col > 0 ? x : xm;
+        let x2 = col < size - 1 ? xe : xm;
+        arr.push(<Line key={'lh'+key} points={[x1, ym, x2, ym]} stroke={'black'} strokeWidth={1} onClick={handler} />);
+        let y1 = row > 0 ? y : ym;
+        let y2 = row < size - 1 ? ye : ym;
+        arr.push(<Line key={'lv'+key} points={[xm, y1, xm, y2]} stroke={'black'} strokeWidth={1} onClick={handler} />);
 
         let field = moves.getField(gameState.board, row, col);
         let color = [null, 'black', 'white'][field];
         if (color) {
-          arr.push(<Circle key={"s"+key} x={xm} y={ym} radius={fieldSizePx * stoneSizeRatio / 2} fill={color} stroke={"gray"} strokeWidth={1} onClick={handler} />);
+          arr.push(<Circle key={'s'+key} x={xm} y={ym} radius={stoneRadiusPx} fill={color}  shadowOffset={{x:4,y:4}} shadowColor={'black'} shadowOpacity={0.2} onClick={handler} />);
         }
 
 
         if (gameInfo.showTerritory && !field) {
           color = [null, 'black', 'white'][moves.getField(gameState.territory, row, col)];
-          let markSquareSizePx = fieldSizePx * markSquareRatio;
           let rectProps = {
-            key: "m" + key,
+            key: 'm' + key,
             x: xm - markSquareSizePx/2,
             y: ym - markSquareSizePx/2,
             width: markSquareSizePx,
             height: markSquareSizePx,
-            stroke: 'gray',
-            strokeWidth: 1,
             onClick: handler,
           };
           if (color) {
@@ -180,7 +181,7 @@ class Game extends React.Component {
             rectProps.fillLinearGradientColorStops = [0, 'white', 1, 'black'];
           }
 
-          arr.push(React.createElement("Rect", rectProps, null));
+          arr.push(React.createElement('Rect', rectProps, null));
         }
       }
     }
@@ -204,7 +205,7 @@ class Game extends React.Component {
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let player = 'Hello ' + gameInfo.selfName + ', you are playing as ' + (gameInfo.selfIsBlack ? 'Black' : 'White') + ' against ' + gameInfo.opponentName;
     let status = gameInfo.selfIsBlack === gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent';
-    status += " [" + millisToHHMMSS(Date.now() - gameState.timestamp) + "]";
+    status += ' [' + millisToHHMMSS(Date.now() - gameState.timestamp) + ']';
     return (
       <div>
         <div className="status">{player}</div>
@@ -216,7 +217,7 @@ class Game extends React.Component {
         </div>
         <div className="button">
           <button onClick={() => this.handlePass()} disabled={gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
-          <button onClick={() => this.handleShowHideTerritory()}>{gameInfo.showTerritory ? "Hide" : "Show"} territory</button>
+          <button onClick={() => this.handleShowHideTerritory()}>{gameInfo.showTerritory ? 'Hide' : 'Show'} territory</button>
         </div>
       </div>
     );

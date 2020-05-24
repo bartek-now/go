@@ -161,6 +161,7 @@ class Game extends React.Component {
         */
       }
     }
+
     let boardSizePx = size * fieldSizePx;
     return (
       <div>
@@ -191,7 +192,7 @@ class Game extends React.Component {
           {this.renderBoard()}
         </div>
         <div className="button">
-          <button onClick={() => this.handlePass()}>Pass</button>
+          <button onClick={() => this.handlePass()} disabled={gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
         </div>
       </div>
     );

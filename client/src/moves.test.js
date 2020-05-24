@@ -411,8 +411,8 @@ test('territory', () => {
   let states = [makeState(initial, false)];
   let state = states[0];
 
-  let territory = moves.markEmptyTerritory(state.size, state.board);
-  expect(getBoardStr(state.size, territory)).toBe(cleanBoardStr(`
+  let ret = moves.markEmptyTerritory(state.size, state.board);
+  expect(getBoardStr(state.size, ret.territory)).toBe(cleanBoardStr(`
   ....WWW
   ...W..W
   .WWW.W.
@@ -467,7 +467,7 @@ test('pass 2 - game over', () => {
 
   moves.pass(states);
   state = states[states.length - 1];
-  expect(state.status).toBe(1);
+  expect(state.status).toBe(2);
   expect(state.blackIsNext).toBe(true);
   expect(state.passCnt).toBe(2);
 
@@ -498,7 +498,7 @@ test('pass 3 - game over', () => {
 
   moves.pass(states);
   state = states[states.length - 1];
-  expect(state.status).toBe(1);
+  expect(state.status).toBe(2);
   expect(state.blackIsNext).toBe(true);
   expect(state.passCnt).toBe(3);
 

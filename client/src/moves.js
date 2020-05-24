@@ -3,10 +3,12 @@ export function constructInitialState(size) {
     return {
         size: size,
         board: [],
-        blackStonesOnBoard : 0,
-        whiteStonesOnBoard : 0,
-        blackStonesCaptured : 0,
-        whiteStonesCaptured : 0,
+        blackStonesOnBoard: 0,
+        whiteStonesOnBoard: 0,
+        blackStonesCaptured: 0,
+        whiteStonesCaptured: 0,
+        blackTerritorySize: 0,
+        whiteTerritorySize: 0,
         status: 0,  // 0 - ongoing, 1 - black won, 2 - white won
         blackIsNext: true,
         passCnt : 0,
@@ -126,16 +128,20 @@ export function markEmptyTerritory(size, board) {
         }
     }
     let territory = [];
+    let blackCnt = 0;
+    let whiteCnt = 0;
     for (let i = 0; i < size; ++i) {
         for (let j = 0; j < size; ++j) {
             if (wasVisited(blackTerritory, i, j) && !wasVisited(whiteTerritory, i, j)) {
                 setField(territory, i, j, 1);
+                blackCnt++;
             } else if (!wasVisited(blackTerritory, i, j) && wasVisited(whiteTerritory, i, j)) {
                 setField(territory, i, j, 2);
+                whiteCnt++;
             }
         }
     }
-    return territory;
+    return { territory: territory, blackCnt: blackCnt, whiteCnt: whiteCnt };
 }
 
 function boardsAreEqual(size, board1, board2) {
@@ -208,7 +214,10 @@ export function makeMove(gameStates, row, col) {
         }
     }
 
-    newState.territory = markEmptyTerritory(size, newState.board);
+    let ret = markEmptyTerritory(size, newState.board);
+    newState.territory = ret.territory;
+    newState.blackTerritorySize = ret.blackCnt;
+    newState.whiteTerritorySize = ret.whiteCnt;
 
     // Now that we verified the move is valid, commit it to the state history.
     newState.timestamp = Date.now();
@@ -234,7 +243,11 @@ export function pass(gameStates) {
 
     // Decide if the game has ended.
     if (newState.passCnt >= 2 && newState.blackIsNext) {
-        newState.status = 1;  // TODO: count points
+        let blackScore = newState.blackStonesOnBoard + newState.blackTerritorySize;
+        let whiteScore = newState.whiteStonesOnBoard + newState.whiteTerritorySize + 7.5;  // 7.5 for Komi
+        newState.status = blackScore > whiteScore ? 1 : 2;
+        newState.statusExplanation = `Black: ${newState.blackStonesOnBoard} stones + ${newState.blackTerritorySize} for teritory => score ${blackScore}
+White: ${newState.whiteStonesOnBoard} stones + ${newState.whiteTerritorySize} for teritory + 7.5 Komi => score ${whiteScore}`;
     }
 
     newState.timestamp = Date.now();

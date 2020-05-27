@@ -251,8 +251,7 @@ class NewGame extends React.Component {
   constructor(props) {
     super(props);
 
-    // TODO: allow to provide size in UI
-    saveFreshGame(this.constructGameSeed(9))
+    saveFreshGame(this.constructGameSeed(this.props.match.params.size))
         .then(state => this.setState(state))
         .catch(reason => alert('Failed to initialize a game: ' + reason));
   }
@@ -289,13 +288,14 @@ class User extends React.Component {
         .catch(reason => alert('Failed to load the game from DB: ' + reason));
   }
 
-  handleButtonClick() {
-    let s = document.getElementById("opponent");
-    if (s.selectedIndex === 0) {
+  handleStartButtonClick() {
+    let o = document.getElementById("opponent");
+    if (o.selectedIndex === 0) {
       alert("No opponenet selected")
       return;
     }
-    let redirect = "/new/u/" + this.state.id + "/o/" + s.options[s.selectedIndex].value;
+    let s = document.getElementById("size");
+    let redirect = "/new/u/" + this.state.id + "/o/" + o.options[o.selectedIndex].value + "/s/" + s.options[s.selectedIndex].value;
     this.setState({redirect: redirect});
   }
 
@@ -306,7 +306,7 @@ class User extends React.Component {
       return (<Redirect to={this.state.redirect} />);
     }
 
-    let optionTemplate = this.state.otherUsers.map(v => (
+    let opponentOptionTemplate = this.state.otherUsers.map(v => (
       <option value={v.id}>{v.name}</option>
     ));
     let gameTemplate = this.state.games.map(v => {
@@ -321,13 +321,19 @@ class User extends React.Component {
           Hello {this.state.name}!
         </div>
         <div className="status">
-          <button onClick={() => this.handleButtonClick()}>
+          <button onClick={() => this.handleStartButtonClick()}>
             Start a new game
           </button>
           &nbsp;against&nbsp;
           <select id="opponent">
             <option />
-            {optionTemplate}
+            {opponentOptionTemplate}
+          </select>
+          &nbsp;on board size&nbsp;
+          <select id="size">
+            <option value="9">9x9</option>
+            <option value="13">13x13</option>
+            <option value="19">19x19</option>
           </select>
         </div>
         <div>
@@ -349,7 +355,7 @@ function App() {
   return (
     <Router>
       <Switch>
-        <Route exact path="/new/u/:userId/o/:opponentId" component={NewGame} />
+        <Route exact path="/new/u/:userId/o/:opponentId/s/:size" component={NewGame} />
         <Route exact path="/p/:playerId" component={Game} />
         <Route exact path="/u/:userLogin" component={User} />
       </Switch>

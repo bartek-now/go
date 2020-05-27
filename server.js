@@ -134,7 +134,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({extended: true}));
 
 app.get('/api/loaduser/:userLogin', (req, res) => {
   console.log("Loading user profile:", req.params.userLogin);

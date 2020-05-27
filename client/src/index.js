@@ -194,8 +194,8 @@ class Game extends React.Component {
           if (color) {
             rectProps.fill = color;
           } else {
-            rectProps.fillLinearGradientStartPoint = { x: 0, y: 0 };
-            rectProps.fillLinearGradientEndPoint = { x: markSquareSizePx, y: markSquareSizePx };
+            rectProps.fillLinearGradientStartPoint = {x: 0, y: 0};
+            rectProps.fillLinearGradientEndPoint = {x: markSquareSizePx, y: markSquareSizePx};
             rectProps.fillLinearGradientColorStops = [0, 'white', 1, 'black'];
           }
 

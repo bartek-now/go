@@ -142,7 +142,7 @@ export function markEmptyTerritory(size, board) {
             }
         }
     }
-    return { territory: territory, blackCnt: blackCnt, whiteCnt: whiteCnt };
+    return {territory: territory, blackCnt: blackCnt, whiteCnt: whiteCnt};
 }
 
 function boardsAreEqual(size, board1, board2) {

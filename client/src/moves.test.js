@@ -62,6 +62,8 @@ test('valid move', () => {
   moves.makeMove(states, 0, 0);
   let state = states[states.length - 1];
   expect(state.blackIsNext).toBe(true);
+  expect(state.lastMove.row).toBe(0);
+  expect(state.lastMove.col).toBe(0);
   expect(state.whiteStonesOnBoard).toBe(1);
   expect(state.blackStonesOnBoard).toBe(1);
   expect(state.whiteStonesCaptured).toBe(0);
@@ -75,6 +77,8 @@ test('valid move', () => {
   moves.makeMove(states, 2, 2);
   state = states[states.length - 1];
   expect(state.blackIsNext).toBe(false);
+  expect(state.lastMove.row).toBe(2);
+  expect(state.lastMove.col).toBe(2);
   expect(state.whiteStonesOnBoard).toBe(1);
   expect(state.blackStonesOnBoard).toBe(2);
   expect(state.whiteStonesCaptured).toBe(0);
@@ -436,6 +440,7 @@ test('pass then move', () => {
   expect(state.status).toBe(0);
   expect(state.blackIsNext).toBe(true);
   expect(state.passCnt).toBe(1);
+  expect(state.lastMove).toBe(null);
 
   moves.pass(states);
   state = states[states.length - 1];

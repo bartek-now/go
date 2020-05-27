@@ -145,8 +145,10 @@ class Game extends React.Component {
 
     const fieldSizePx = 70;
     const stoneSizeRatio = 0.73;
+    const markLastMoveRatio = 0.3;
     const markSquareRatio = 0.3;
     const stoneRadiusPx = fieldSizePx * stoneSizeRatio / 2;
+    const markLastMoveRadiusPx = fieldSizePx * markLastMoveRatio / 2;
     const markSquareSizePx = fieldSizePx * markSquareRatio
     let arr = [];
     for (let row = 0; row < size; row++) {
@@ -172,9 +174,12 @@ class Game extends React.Component {
         let field = moves.getField(gameState.board, row, col);
         let color = [null, 'black', 'white'][field];
         if (color) {
-          arr.push(<Circle key={'s'+key} x={xm} y={ym} radius={stoneRadiusPx} fill={color}  shadowOffset={{x:4,y:4}} shadowColor={'black'} shadowOpacity={0.2} onClick={handler} />);
+          arr.push(<Circle key={'s'+key} x={xm} y={ym} radius={stoneRadiusPx} fill={color} shadowOffset={{x:4,y:4}} shadowColor={'black'} shadowOpacity={0.2} onClick={handler} />);
         }
 
+        if (gameState.lastMove && gameState.lastMove.row === row && gameState.lastMove.col === col) {
+          arr.push(<Circle key={'c'+key} x={xm} y={ym} radius={markLastMoveRadiusPx} fill={'red'} onClick={handler} />);
+        }
 
         if (gameInfo.showTerritory && !field) {
           color = [null, 'black', 'white'][moves.getField(gameState.territory, row, col)];

@@ -3,6 +3,7 @@ export function constructInitialState(size) {
     return {
         size: size,
         board: [],
+        lastMove: null,
         blackStonesOnBoard: 0,
         whiteStonesOnBoard: 0,
         blackStonesCaptured: 0,
@@ -171,6 +172,7 @@ export function makeMove(gameStates, row, col) {
     let newState = JSON.parse(JSON.stringify(state));
     newState.blackIsNext = !state.blackIsNext;
     newState.passCnt = 0;
+    newState.lastMove = {row: row, col: col};
 
     let moveColor = state.blackIsNext ? 1 : 2;
     let capturingColor = state.blackIsNext ? 2 : 1;
@@ -234,6 +236,7 @@ export function pass(gameStates) {
     let newState = JSON.parse(JSON.stringify(state));
     newState.passCnt++;
     newState.blackIsNext = !state.blackIsNext;
+    newState.lastMove = null;
 
     if (state.blackIsNext) {
         newState.blackStonesCaptured++;

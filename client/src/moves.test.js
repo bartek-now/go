@@ -511,3 +511,59 @@ test('pass 3 - game over', () => {
 
   expect(() => moves.pass(states)).toThrowError('game has ended');
 });
+
+test('undo - move pass move', () => {
+  let initial = `
+  ...
+  .B.
+  ...
+  `;
+  let states = [makeState(initial, false)];
+
+  moves.makeMove(states, 0, 0);
+  moves.pass(states);
+  moves.makeMove(states, 2, 2);
+
+  moves.undo(states);
+  let state = states[states.length - 1];
+  expect(state.blackIsNext).toBe(false);
+  expect(state.lastMove).toBe(null);
+  expect(state.whiteStonesOnBoard).toBe(1);
+  expect(state.blackStonesOnBoard).toBe(1);
+  expect(state.whiteStonesCaptured).toBe(0);
+  expect(state.blackStonesCaptured).toBe(1);
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  W..
+  .B.
+  ...
+  `));
+
+  moves.undo(states);
+  state = states[states.length - 1];
+  expect(state.blackIsNext).toBe(true);
+  expect(state.lastMove.row).toBe(0);
+  expect(state.lastMove.col).toBe(0);
+  expect(state.whiteStonesOnBoard).toBe(1);
+  expect(state.blackStonesOnBoard).toBe(1);
+  expect(state.whiteStonesCaptured).toBe(0);
+  expect(state.blackStonesCaptured).toBe(0);
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  W..
+  .B.
+  ...
+  `));
+
+  moves.undo(states);
+  state = states[states.length - 1];
+  expect(state.blackIsNext).toBe(false);
+  expect(state.lastMove).toBe(null);
+  expect(state.whiteStonesOnBoard).toBe(0);
+  expect(state.blackStonesOnBoard).toBe(1);
+  expect(state.whiteStonesCaptured).toBe(0);
+  expect(state.blackStonesCaptured).toBe(0);
+  expect(getBoardStrFromState(state)).toBe(cleanBoardStr(`
+  ...
+  .B.
+  ...
+  `));
+});

@@ -158,7 +158,7 @@ class Game extends React.Component {
     const stoneSizeRatio = 0.73;
     const shadowOffsetRatio = 0.06;
     const markLastMoveRatio = 0.3;
-    const markSquareRatio = 0.3;
+    const markSquareRatio = 0.25;
 
     const stoneRadiusPx = fieldSizePx * stoneSizeRatio / 2;
     const shadowOffsetPx = fieldSizePx * shadowOffsetRatio;
@@ -202,7 +202,7 @@ class Game extends React.Component {
           arr.push(<Circle key={'cls'+key} x={xm} y={ym} radius={markLastMoveRadiusPx} fill={'red'} onClick={handler} />);
         }
 
-        if (gameInfo.showTerritory && !field) {
+        if ((gameInfo.showTerritory || gameState.status) && !field) {
           color = [null, 'black', 'white'][moves.getField(gameState.territory, row, col)];
           let rectProps = {
             key: 'm' + key,
@@ -261,7 +261,7 @@ class Game extends React.Component {
         <div className="button">
           <button onClick={() => this.handlePassPress()} disabled={gameState.status || gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
           <button onClick={() => this.handleUndoPress()} disabled={gameInfo.gameStates.length <= 1 || gameState.blackIsNext === gameInfo.selfIsBlack}>Undo</button>
-          <button onClick={() => this.handleShowHideTerritory()}>{gameInfo.showTerritory ? 'Hide' : 'Show'} territory</button>
+          <button onClick={() => this.handleShowHideTerritory()} hidden={gameState.status}>{gameInfo.showTerritory ? 'Hide' : 'Show'} territory</button>
         </div>
       </div>
     );

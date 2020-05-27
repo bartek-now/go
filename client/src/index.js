@@ -138,18 +138,33 @@ class Game extends React.Component {
     this.setState(gameInfo);
   }
 
+  hasFieldMarker(size, row, col) {
+    if (size === 19) {
+      return (row === 3 || row === 9 || row === 15) && (col === 3 || col === 9 || col === 15);
+    } else if (size === 13) {
+      return (row === 3 || row === 6 || row === 9) && (col === 3 || col === 6 || col === 9);
+    } else if (size === 9) {
+      return ((row === 2 || row === 6) && (col === 2 || col === 6)) || (row === 4 && col === 4);
+    }
+  }
+
   renderBoard() {
     let gameInfo = this.state;
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let size = gameState.size;
 
-    const fieldSizePx = 70;
+    const fieldSizePx = 65;
+    const fieldMarkerRadiusPx = 5;
     const stoneSizeRatio = 0.73;
+    const shadowOffsetRatio = 0.06;
     const markLastMoveRatio = 0.3;
     const markSquareRatio = 0.3;
+
     const stoneRadiusPx = fieldSizePx * stoneSizeRatio / 2;
+    const shadowOffsetPx = fieldSizePx * shadowOffsetRatio;
     const markLastMoveRadiusPx = fieldSizePx * markLastMoveRatio / 2;
     const markSquareSizePx = fieldSizePx * markSquareRatio
+
     let arr = [];
     for (let row = 0; row < size; row++) {
       for (let col = 0; col < size; col++) {
@@ -164,21 +179,27 @@ class Game extends React.Component {
         
         arr.push(<Rect key={'f'+key} x={x} y={y} width={fieldSizePx} height={fieldSizePx} fill={'#A06800'} onClick={handler} />);
 
+        if (this.hasFieldMarker(size, row, col)) {
+          arr.push(<Circle key={'cfm'+key} x={xm} y={ym} radius={fieldMarkerRadiusPx} fill={'black'} onClick={handler} />);
+        }
+
         let x1 = col > 0 ? x : xm;
         let x2 = col < size - 1 ? xe : xm;
-        arr.push(<Line key={'lh'+key} points={[x1, ym, x2, ym]} stroke={'black'} strokeWidth={1} onClick={handler} />);
+        let width = row > 0 && row < size - 1 ? 1 : 3;
+        arr.push(<Line key={'lh'+key} points={[x1, ym, x2, ym]} stroke={'black'} strokeWidth={width} onClick={handler} />);
         let y1 = row > 0 ? y : ym;
         let y2 = row < size - 1 ? ye : ym;
-        arr.push(<Line key={'lv'+key} points={[xm, y1, xm, y2]} stroke={'black'} strokeWidth={1} onClick={handler} />);
+        width = col > 0 && col < size - 1 ? 1 : 3;
+        arr.push(<Line key={'lv'+key} points={[xm, y1, xm, y2]} stroke={'black'} strokeWidth={width} onClick={handler} />);
 
         let field = moves.getField(gameState.board, row, col);
         let color = [null, 'black', 'white'][field];
         if (color) {
-          arr.push(<Circle key={'s'+key} x={xm} y={ym} radius={stoneRadiusPx} fill={color} shadowOffset={{x:4,y:4}} shadowColor={'black'} shadowOpacity={0.2} onClick={handler} />);
+          arr.push(<Circle key={'s'+key} x={xm} y={ym} radius={stoneRadiusPx} fill={color} shadowOffset={{x:shadowOffsetPx,y:shadowOffsetPx}} shadowColor={'black'} shadowOpacity={0.2} onClick={handler} />);
         }
 
         if (gameState.lastMove && gameState.lastMove.row === row && gameState.lastMove.col === col) {
-          arr.push(<Circle key={'c'+key} x={xm} y={ym} radius={markLastMoveRadiusPx} fill={'red'} onClick={handler} />);
+          arr.push(<Circle key={'cls'+key} x={xm} y={ym} radius={markLastMoveRadiusPx} fill={'red'} onClick={handler} />);
         }
 
         if (gameInfo.showTerritory && !field) {
@@ -251,7 +272,7 @@ class NewGame extends React.Component {
   constructor(props) {
     super(props);
 
-    saveFreshGame(this.constructGameSeed(this.props.match.params.size))
+    saveFreshGame(this.constructGameSeed(this.props.match.params.size.Number()))
         .then(state => this.setState(state))
         .catch(reason => alert('Failed to initialize a game: ' + reason));
   }

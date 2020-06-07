@@ -1,7 +1,7 @@
 import * as moves from './moves';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {Circle, Layer, Line, Rect, Stage} from 'react-konva';
+import {Circle, Layer, Line, Rect, Stage, Text} from 'react-konva';
 import {
   BrowserRouter as Router,
   Link,
@@ -154,7 +154,10 @@ class Game extends React.Component {
     let size = gameState.size;
 
     const fieldSizePx = 65;
+    const boardEdgePx = 30;
+    const fontSizePx = 20;
     const fieldMarkerRadiusPx = 5;
+
     const stoneSizeRatio = 0.83;
     const lightOffsetRatio = 0.06;
     const markLastMoveRatio = 0.25;
@@ -165,11 +168,34 @@ class Game extends React.Component {
     const markLastMoveRadiusPx = fieldSizePx * markLastMoveRatio / 2;
     const markSquareSizePx = fieldSizePx * markSquareRatio
 
+    let boardSizePx = size * fieldSizePx + 2 * boardEdgePx;
+
     let arr = [];
+    arr.push(<Rect key={'board'} x={0} y={0} width={boardSizePx} height={boardSizePx} fill={'#A06800'} />);
+
+    for (let row = 0; row < size; row++) {
+      let y = fieldSizePx * row + boardEdgePx;
+      y += fieldSizePx / 2;
+      y -= fontSizePx / 2;
+      y++;  // Looks more symmetrical with +1.
+      arr.push(<Text x={0} width={boardEdgePx} y={y} align={'center'} fontSize={fontSizePx} fontStyle={'bold'} text={row+1} />);
+      let x = boardEdgePx + size * fieldSizePx;
+      arr.push(<Text x={x} width={boardEdgePx} y={y} align={'center'} fontSize={fontSizePx} fontStyle={'bold'} text={row+1} />);
+    }
+    for (let col = 0; col < size; col++) {
+      let charCode = 65 + (col < 8 ? col : col + 1);
+      let char = String.fromCharCode(charCode);
+      let x = fieldSizePx * col + boardEdgePx;
+      let y = boardEdgePx / 2 - fontSizePx / 2;
+      arr.push(<Text x={x} width={fieldSizePx} y={y} align={'center'} fontSize={fontSizePx} fontStyle={'bold'} text={char} />);
+      y += boardEdgePx + size * fieldSizePx;
+      arr.push(<Text x={x} width={fieldSizePx} y={y} align={'center'} fontSize={fontSizePx} fontStyle={'bold'} text={char} />);
+    }
+
     for (let row = 0; row < size; row++) {
       for (let col = 0; col < size; col++) {
-        let x = fieldSizePx * col;
-        let y = fieldSizePx * row;
+        let x = fieldSizePx * col + boardEdgePx;
+        let y = fieldSizePx * row + boardEdgePx;
         let xm = x + fieldSizePx / 2;
         let ym = y + fieldSizePx / 2;
         let xe = x + fieldSizePx;
@@ -241,7 +267,6 @@ class Game extends React.Component {
       }
     }
 
-    let boardSizePx = size * fieldSizePx;
     return (
       <div>
         <Stage width={boardSizePx} height={boardSizePx}>

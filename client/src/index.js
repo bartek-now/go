@@ -262,15 +262,20 @@ class Game extends React.Component {
     let status = gameState.status
         ? (gameInfo.selfIsBlack === (gameState.status === 1) ? 'You won!' : 'The game has ended and the winner is *not* you, sorry...')
         : (gameInfo.selfIsBlack === gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent');
-    if (!gameState.status) {
+    let blackScore = "";
+    let whiteScore = "";
+    if (gameState.status) {
+      blackScore = "--  final score: " + gameState.blackScoreExplanation;
+      whiteScore = "--  final score: " + gameState.whiteScoreExplanation;
+    } else {
       status += ' [' + millisToHHMMSS(Date.now() - gameState.timestamp) + ']';
     }
     return (
       <div>
         <div className="status">{player}</div>
         <div className="status emphasize">{status}</div>
-        <div className="status">Black stones on board: {gameState.blackStonesOnBoard} (caputred: {gameState.blackStonesCaptured})</div>
-        <div className="status">White stones on board: {gameState.whiteStonesOnBoard} (caputred: {gameState.whiteStonesCaptured})</div>
+        <div className="status">Black stones on board: {gameState.blackStonesOnBoard} (caputred: {gameState.blackStonesCaptured}){blackScore}</div>
+        <div className="status">White stones on board: {gameState.whiteStonesOnBoard} (caputred: {gameState.whiteStonesCaptured}){whiteScore}</div>
         <div>
           {this.renderBoard()}
         </div>

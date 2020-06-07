@@ -249,8 +249,8 @@ export function pass(gameStates) {
         let blackScore = newState.blackStonesOnBoard + newState.blackTerritorySize;
         let whiteScore = newState.whiteStonesOnBoard + newState.whiteTerritorySize + 7.5;  // 7.5 for Komi
         newState.status = blackScore > whiteScore ? 1 : 2;
-        newState.statusExplanation = `Black: ${newState.blackStonesOnBoard} stones + ${newState.blackTerritorySize} for teritory => score ${blackScore}
-White: ${newState.whiteStonesOnBoard} stones + ${newState.whiteTerritorySize} for teritory + 7.5 Komi => score ${whiteScore}`;
+        newState.blackScoreExplanation = `${newState.blackStonesOnBoard} stones + ${newState.blackTerritorySize} for teritory => score ${blackScore}`;
+        newState.whiteScoreExplanation = `${newState.whiteStonesOnBoard} stones + ${newState.whiteTerritorySize} for teritory + 7.5 Komi => score ${whiteScore}`;
     }
 
     newState.timestamp = Date.now();

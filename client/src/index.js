@@ -155,13 +155,13 @@ class Game extends React.Component {
 
     const fieldSizePx = 65;
     const fieldMarkerRadiusPx = 5;
-    const stoneSizeRatio = 0.73;
-    const shadowOffsetRatio = 0.06;
-    const markLastMoveRatio = 0.3;
+    const stoneSizeRatio = 0.83;
+    const lightOffsetRatio = 0.06;
+    const markLastMoveRatio = 0.25;
     const markSquareRatio = 0.25;
 
     const stoneRadiusPx = fieldSizePx * stoneSizeRatio / 2;
-    const shadowOffsetPx = fieldSizePx * shadowOffsetRatio;
+    const lightOffsetPx = fieldSizePx * lightOffsetRatio;
     const markLastMoveRadiusPx = fieldSizePx * markLastMoveRatio / 2;
     const markSquareSizePx = fieldSizePx * markSquareRatio
 
@@ -193,9 +193,25 @@ class Game extends React.Component {
         arr.push(<Line key={'lv'+key} points={[xm, y1, xm, y2]} stroke={'black'} strokeWidth={width} onClick={handler} />);
 
         let field = moves.getField(gameState.board, row, col);
-        let color = [null, 'black', 'white'][field];
+        let color = [null, '#333333', 'white'][field];
+        let gradientColor = [null, 'black', '#cccccc'][field];
         if (color) {
-          arr.push(<Circle key={'s'+key} x={xm} y={ym} radius={stoneRadiusPx} fill={color} shadowOffset={{x:shadowOffsetPx,y:shadowOffsetPx}} shadowColor={'black'} shadowOpacity={0.2} onClick={handler} />);
+          let circleProps = {
+            key: 's'+key,
+            x: xm,
+            y: ym,
+            radius: stoneRadiusPx,
+            fillRadialGradientStartPoint: {x: -lightOffsetPx, y: -lightOffsetPx},
+            fillRadialGradientEndPoint: {x: -lightOffsetPx, y: -lightOffsetPx},
+            fillRadialGradientStartRadius: 0,
+            fillRadialGradientEndRadius: stoneRadiusPx,
+            fillRadialGradientColorStops: [0, color, 1, gradientColor],
+            shadowOffset: {x:lightOffsetPx, y:lightOffsetPx},
+            shadowColor: 'black',
+            shadowOpacity: 0.2,
+            onClick: handler,
+          };
+          arr.push(React.createElement('Circle', circleProps, null));
         }
 
         if (gameState.lastMove && gameState.lastMove.row === row && gameState.lastMove.col === col) {

@@ -219,7 +219,7 @@ class Game extends React.Component {
         arr.push(<Line key={'lv'+key} points={[xm, y1, xm, y2]} stroke={'black'} strokeWidth={width} onClick={handler} />);
 
         let field = moves.getField(gameState.board, row, col);
-        let color = [null, '#333333', 'white'][field];
+        let color = [null, '#505050', 'white'][field];
         let gradientColor = [null, 'black', '#cccccc'][field];
         if (color) {
           let circleProps = {

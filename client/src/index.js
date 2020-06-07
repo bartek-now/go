@@ -272,7 +272,7 @@ class NewGame extends React.Component {
   constructor(props) {
     super(props);
 
-    saveFreshGame(this.constructGameSeed(this.props.match.params.size.Number()))
+    saveFreshGame(this.constructGameSeed(Number(this.props.match.params.size)))
         .then(state => this.setState(state))
         .catch(reason => alert('Failed to initialize a game: ' + reason));
   }

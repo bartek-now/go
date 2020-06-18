@@ -267,9 +267,90 @@ class Game extends React.Component {
       }
     }
 
+    const spacingPx = 20;
+    const playerInfoWidthPx = 400;
+    const playerInfoHeightPx = 90;
+    const paddingPx = 10;
+    const playerFontSize = playerInfoHeightPx / 5;
+
+    let key = 'p1';
+    let ix = boardSizePx + spacingPx;
+    let iy = 0;
+
+    let nameText = gameInfo.selfName;
+    let moveText = gameState.status
+        ? (gameInfo.selfIsBlack === (gameState.status === 1) ? 'WINNER!' : 'loser!')
+        : (gameInfo.selfIsBlack === gameState.blackIsNext ? 'MOVE' + ' [' + millisToHHMMSS(Date.now() - gameState.timestamp) + ']' : 'waiting for the opponent...');
+    let stonesOnBoardText = "Stones on board: " + (gameInfo.selfIsBlack ? gameState.blackStonesOnBoard : gameState.whiteStonesOnBoard);
+    let stonesCapturedText = "Opponent stones captured: " + (gameInfo.selfIsBlack ? gameState.whiteStonesCaptured : gameState.blackStonesCaptured);
+    let scoreText = "Score: " + (gameInfo.selfIsBlack ? gameState.blackStonesOnBoard + gameState.blackTerritorySize : gameState.whiteStonesOnBoard + gameState.whiteTerritorySize + 7.5);
+
+    arr.push(<Rect key={key+'info'} x={ix} y={iy} width={playerInfoWidthPx+2*paddingPx} height={playerInfoHeightPx+2*paddingPx} fill={'#A06800'} />);
+    arr.push(<Text key={key+'tn'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx} align={'left'} fontSize={playerFontSize-1} fontStyle={'bold'} text={nameText} />);
+    arr.push(<Text key={key+'tm'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + playerFontSize} align={'left'} fontSize={playerFontSize-1} text={moveText} />);
+    arr.push(<Text key={key+'tsob'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 2*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesOnBoardText} />);
+    arr.push(<Text key={key+'tsc'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 3*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesCapturedText} />);
+    arr.push(<Text key={key+'ts'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 4*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={scoreText} />);
+    let color = {true: '#505050', false: 'white'}[gameInfo.selfIsBlack];
+    let gradientColor = {true: 'black', false: '#cccccc'}[gameInfo.selfIsBlack];
+    {
+      let circleProps = {
+        key: key + 's',
+        x: ix + paddingPx + playerInfoHeightPx/2,
+        y: iy + paddingPx + playerInfoHeightPx/2,
+        radius: stoneRadiusPx,
+        fillRadialGradientStartPoint: {x: -lightOffsetPx, y: -lightOffsetPx},
+        fillRadialGradientEndPoint: {x: -lightOffsetPx, y: -lightOffsetPx},
+        fillRadialGradientStartRadius: 0,
+        fillRadialGradientEndRadius: stoneRadiusPx,
+        fillRadialGradientColorStops: [0, color, 1, gradientColor],
+        shadowOffset: {x:lightOffsetPx, y:lightOffsetPx},
+        shadowColor: 'black',
+        shadowOpacity: 0.2,
+      };
+      arr.push(React.createElement('Circle', circleProps, null));
+    }
+
+    key = 'p2';
+    iy = boardSizePx - (playerInfoHeightPx + 2*paddingPx);
+
+    nameText = gameInfo.opponentName;
+    moveText = gameState.status
+        ? (gameInfo.selfIsBlack !== (gameState.status === 1) ? 'WINNER!' : 'loser!')
+        : (gameInfo.selfIsBlack !== gameState.blackIsNext ? 'MOVE' + ' [' + millisToHHMMSS(Date.now() - gameState.timestamp) + ']' : 'waiting for the opponent...');
+    stonesOnBoardText = "Stones on board: " + (!gameInfo.selfIsBlack ? gameState.blackStonesOnBoard : gameState.whiteStonesOnBoard);
+    stonesCapturedText = "Opponent stones captured: " + (!gameInfo.selfIsBlack ? gameState.whiteStonesCaptured : gameState.blackStonesCaptured);
+    scoreText = "Score: " + (!gameInfo.selfIsBlack ? gameState.blackStonesOnBoard + gameState.blackTerritorySize : gameState.whiteStonesOnBoard + gameState.whiteTerritorySize + 7.5);
+
+    arr.push(<Rect key={key+'info'} x={ix} y={iy} width={playerInfoWidthPx+2*paddingPx} height={playerInfoHeightPx+2*paddingPx} fill={'#A06800'} />);
+    arr.push(<Text key={key+'tn'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx} align={'left'} fontSize={playerFontSize-1} fontStyle={'bold'} text={nameText} />);
+    arr.push(<Text key={key+'tm'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + playerFontSize} align={'left'} fontSize={playerFontSize-1} text={moveText} />);
+    arr.push(<Text key={key+'tsob'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 2*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesOnBoardText} />);
+    arr.push(<Text key={key+'tsc'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 3*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesCapturedText} />);
+    arr.push(<Text key={key+'ts'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 4*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={scoreText} />);
+    color = {true: '#505050', false: 'white'}[!gameInfo.selfIsBlack];
+    gradientColor = {true: 'black', false: '#cccccc'}[!gameInfo.selfIsBlack];
+    {
+      let circleProps = {
+        key: key + 's',
+        x: ix + paddingPx + playerInfoHeightPx/2,
+        y: iy + paddingPx + playerInfoHeightPx/2,
+        radius: stoneRadiusPx,
+        fillRadialGradientStartPoint: {x: -lightOffsetPx, y: -lightOffsetPx},
+        fillRadialGradientEndPoint: {x: -lightOffsetPx, y: -lightOffsetPx},
+        fillRadialGradientStartRadius: 0,
+        fillRadialGradientEndRadius: stoneRadiusPx,
+        fillRadialGradientColorStops: [0, color, 1, gradientColor],
+        shadowOffset: {x:lightOffsetPx, y:lightOffsetPx},
+        shadowColor: 'black',
+        shadowOpacity: 0.2,
+      };
+      arr.push(React.createElement('Circle', circleProps, null));
+    }
+
     return (
       <div>
-        <Stage width={boardSizePx} height={boardSizePx}>
+        <Stage width={boardSizePx+spacingPx+playerInfoWidthPx} height={boardSizePx}>
           <Layer>
             {arr}
           </Layer>
@@ -281,26 +362,9 @@ class Game extends React.Component {
   render() {
     let gameInfo = this.state;
     if (!gameInfo) return null;
-
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
-    let player = 'Hello ' + gameInfo.selfName + ', you are playing as ' + (gameInfo.selfIsBlack ? 'Black' : 'White') + ' against ' + gameInfo.opponentName;
-    let status = gameState.status
-        ? (gameInfo.selfIsBlack === (gameState.status === 1) ? 'You won!' : 'The game has ended and the winner is *not* you, sorry...')
-        : (gameInfo.selfIsBlack === gameState.blackIsNext ? 'Your move!' : 'Waiting for the opponent');
-    let blackScore = "";
-    let whiteScore = "";
-    if (gameState.status) {
-      blackScore = "--  final score: " + gameState.blackScoreExplanation;
-      whiteScore = "--  final score: " + gameState.whiteScoreExplanation;
-    } else {
-      status += ' [' + millisToHHMMSS(Date.now() - gameState.timestamp) + ']';
-    }
     return (
       <div>
-        <div className="status">{player}</div>
-        <div className="status emphasize">{status}</div>
-        <div className="status">Black stones on board: {gameState.blackStonesOnBoard} (caputred: {gameState.blackStonesCaptured}){blackScore}</div>
-        <div className="status">White stones on board: {gameState.whiteStonesOnBoard} (caputred: {gameState.whiteStonesCaptured}){whiteScore}</div>
         <div>
           {this.renderBoard()}
         </div>

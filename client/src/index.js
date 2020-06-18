@@ -365,13 +365,13 @@ class Game extends React.Component {
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     return (
       <div>
-        <div>
-          {this.renderBoard()}
-        </div>
         <div className="button">
           <button onClick={() => this.handlePassPress()} disabled={gameState.status || gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
           <button onClick={() => this.handleUndoPress()} disabled={gameInfo.gameStates.length <= 1 || gameState.blackIsNext === gameInfo.selfIsBlack}>Undo</button>
           <button onClick={() => this.handleShowHideTerritory()} hidden={gameState.status}>{gameInfo.showTerritory ? 'Hide' : 'Show'} territory</button>
+        </div>
+        <div>
+          {this.renderBoard()}
         </div>
       </div>
     );

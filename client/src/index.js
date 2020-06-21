@@ -148,6 +148,26 @@ class Game extends React.Component {
     }
   }
 
+  getColor(selector) {
+    const blackColor = 'black';
+    const blackGradient = '#505050';
+    const whiteColor = 'white';
+    const whiteGradient = '#cccccc';
+    const stoneColor = [blackGradient, whiteColor];
+    const gradientColor = [blackColor, whiteGradient];
+    const territoryColor = [blackColor, whiteColor];
+    let index;
+    if (typeof selector === 'boolean') {
+      // In this case selector is equivalent to isBlack.
+      index = selector ? 0 : 1;
+    } else {
+      // Otherwise, select is a number: 0 for none, 1 for black, 2 for white.
+      if (selector === 0) {return {territory1: territoryColor[0], territory2: territoryColor[1]}}
+      index = selector - 1;
+    }
+    return {main: stoneColor[index], gradient: gradientColor[index], territory: territoryColor[index]};
+  }
+
   render() {
     let gameInfo = this.state;
     if (!gameInfo) return null;
@@ -221,9 +241,8 @@ class Game extends React.Component {
         arr.push(<Line key={'lv'+key} points={[xm, y1, xm, y2]} stroke={'black'} strokeWidth={width} onClick={handler} />);
 
         let field = moves.getField(gameState.board, row, col);
-        let color = [null, '#505050', 'white'][field];
-        let gradientColor = [null, 'black', '#cccccc'][field];
-        if (color) {
+        let color = this.getColor(field);
+        if (field) {
           let circleProps = {
             key: 's'+key,
             x: xm,
@@ -233,7 +252,7 @@ class Game extends React.Component {
             fillRadialGradientEndPoint: {x: -lightOffsetPx, y: -lightOffsetPx},
             fillRadialGradientStartRadius: 0,
             fillRadialGradientEndRadius: stoneRadiusPx,
-            fillRadialGradientColorStops: [0, color, 1, gradientColor],
+            fillRadialGradientColorStops: [0, color.main, 1, color.gradient],
             shadowOffset: {x:lightOffsetPx, y:lightOffsetPx},
             shadowColor: 'black',
             shadowOpacity: 0.2,
@@ -247,7 +266,8 @@ class Game extends React.Component {
         }
 
         if ((gameInfo.showTerritory || gameState.status) && !field) {
-          color = [null, 'black', 'white'][moves.getField(gameState.territory, row, col)];
+          field = moves.getField(gameState.territory, row, col);
+          color = this.getColor(field);
           let rectProps = {
             key: 'm' + key,
             x: xm - markSquareSizePx/2,
@@ -256,12 +276,12 @@ class Game extends React.Component {
             height: markSquareSizePx,
             onClick: handler,
           };
-          if (color) {
-            rectProps.fill = color;
+          if (field) {
+            rectProps.fill = color.territory;
           } else {
             rectProps.fillLinearGradientStartPoint = {x: 0, y: 0};
             rectProps.fillLinearGradientEndPoint = {x: markSquareSizePx, y: markSquareSizePx};
-            rectProps.fillLinearGradientColorStops = [0, 'white', 1, 'black'];
+            rectProps.fillLinearGradientColorStops = [0, color.territory1, 1, color.territory2];
           }
 
           arr.push(React.createElement('Rect', rectProps, null));
@@ -296,9 +316,7 @@ class Game extends React.Component {
     p1Arr.push(<Text key={key+'tsob'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 2*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesOnBoardText} />);
     p1Arr.push(<Text key={key+'tsc'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 3*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesCapturedText} />);
     p1Arr.push(<Text key={key+'ts'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 4*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={scoreText} />);
-    let color = {true: '#505050', false: 'white'}[gameInfo.selfIsBlack];
-    let gradientColor = {true: 'black', false: '#cccccc'}[gameInfo.selfIsBlack];
-    {
+    let color = this.getColor(gameInfo.selfIsBlack);    {
       let circleProps = {
         key: key + 's',
         x: ix + paddingPx + playerInfoHeightPx/2,
@@ -308,7 +326,7 @@ class Game extends React.Component {
         fillRadialGradientEndPoint: {x: -lightOffsetPx, y: -lightOffsetPx},
         fillRadialGradientStartRadius: 0,
         fillRadialGradientEndRadius: stoneRadiusPx,
-        fillRadialGradientColorStops: [0, color, 1, gradientColor],
+        fillRadialGradientColorStops: [0, color.main, 1, color.gradient],
         shadowOffset: {x:lightOffsetPx, y:lightOffsetPx},
         shadowColor: 'black',
         shadowOpacity: 0.2,
@@ -335,8 +353,7 @@ class Game extends React.Component {
     p2Arr.push(<Text key={key+'tsob'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 2*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesOnBoardText} />);
     p2Arr.push(<Text key={key+'tsc'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 3*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesCapturedText} />);
     p2Arr.push(<Text key={key+'ts'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 4*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={scoreText} />);
-    color = {true: '#505050', false: 'white'}[!gameInfo.selfIsBlack];
-    gradientColor = {true: 'black', false: '#cccccc'}[!gameInfo.selfIsBlack];
+    color = this.getColor(!gameInfo.selfIsBlack);
     {
       let circleProps = {
         key: key + 's',
@@ -347,7 +364,7 @@ class Game extends React.Component {
         fillRadialGradientEndPoint: {x: -lightOffsetPx, y: -lightOffsetPx},
         fillRadialGradientStartRadius: 0,
         fillRadialGradientEndRadius: stoneRadiusPx,
-        fillRadialGradientColorStops: [0, color, 1, gradientColor],
+        fillRadialGradientColorStops: [0, color.main, 1, color.gradient],
         shadowOffset: {x:lightOffsetPx, y:lightOffsetPx},
         shadowColor: 'black',
         shadowOpacity: 0.2,

@@ -11,8 +11,14 @@ ol, ul {
   margin-bottom: 10px;
 }
 
-.button button {
+.buttons table {
+  vertical-align: middle;
+  text-align: center;
+}
+
+.buttons button {
   margin: 10px;
   padding: 10px;
   font-size: 16px;
+  width: 150px;
 }

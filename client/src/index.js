@@ -148,8 +148,10 @@ class Game extends React.Component {
     }
   }
 
-  renderBoard() {
+  render() {
     let gameInfo = this.state;
+    if (!gameInfo) return null;
+
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let size = gameState.size;
 
@@ -268,14 +270,14 @@ class Game extends React.Component {
     }
 
     const spacingPx = 20;
+    const paddingPx = 10;
     const playerInfoWidthPx = 400;
     const playerInfoHeightPx = 90;
-    const paddingPx = 10;
+    const playerInfoRectWidthPx = playerInfoWidthPx + 2*paddingPx;
+    const playerInfoRectHeightPx = playerInfoHeightPx + 2*paddingPx;
     const playerFontSize = playerInfoHeightPx / 5;
 
     let key = 'p1';
-    let ix = boardSizePx + spacingPx;
-    let iy = 0;
 
     let nameText = gameInfo.selfName;
     let moveText = gameState.status
@@ -285,12 +287,15 @@ class Game extends React.Component {
     let stonesCapturedText = "Opponent stones captured: " + (gameInfo.selfIsBlack ? gameState.whiteStonesCaptured : gameState.blackStonesCaptured);
     let scoreText = "Score: " + (gameInfo.selfIsBlack ? gameState.blackStonesOnBoard + gameState.blackTerritorySize : gameState.whiteStonesOnBoard + gameState.whiteTerritorySize + 7.5);
 
-    arr.push(<Rect key={key+'info'} x={ix} y={iy} width={playerInfoWidthPx+2*paddingPx} height={playerInfoHeightPx+2*paddingPx} fill={'#A06800'} />);
-    arr.push(<Text key={key+'tn'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx} align={'left'} fontSize={playerFontSize-1} fontStyle={'bold'} text={nameText} />);
-    arr.push(<Text key={key+'tm'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + playerFontSize} align={'left'} fontSize={playerFontSize-1} text={moveText} />);
-    arr.push(<Text key={key+'tsob'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 2*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesOnBoardText} />);
-    arr.push(<Text key={key+'tsc'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 3*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesCapturedText} />);
-    arr.push(<Text key={key+'ts'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 4*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={scoreText} />);
+    let p1Arr = [];
+    let ix = 0;
+    let iy = 0;
+    p1Arr.push(<Rect key={key+'info'} x={ix} y={iy} width={playerInfoRectWidthPx} height={playerInfoRectHeightPx} fill={'#A06800'} />);
+    p1Arr.push(<Text key={key+'tn'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx} align={'left'} fontSize={playerFontSize-1} fontStyle={'bold'} text={nameText} />);
+    p1Arr.push(<Text key={key+'tm'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + playerFontSize} align={'left'} fontSize={playerFontSize-1} text={moveText} />);
+    p1Arr.push(<Text key={key+'tsob'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 2*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesOnBoardText} />);
+    p1Arr.push(<Text key={key+'tsc'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 3*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesCapturedText} />);
+    p1Arr.push(<Text key={key+'ts'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 4*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={scoreText} />);
     let color = {true: '#505050', false: 'white'}[gameInfo.selfIsBlack];
     let gradientColor = {true: 'black', false: '#cccccc'}[gameInfo.selfIsBlack];
     {
@@ -308,11 +313,10 @@ class Game extends React.Component {
         shadowColor: 'black',
         shadowOpacity: 0.2,
       };
-      arr.push(React.createElement('Circle', circleProps, null));
+      p1Arr.push(React.createElement('Circle', circleProps, null));
     }
 
     key = 'p2';
-    iy = boardSizePx - (playerInfoHeightPx + 2*paddingPx);
 
     nameText = gameInfo.opponentName;
     moveText = gameState.status
@@ -322,12 +326,15 @@ class Game extends React.Component {
     stonesCapturedText = "Opponent stones captured: " + (!gameInfo.selfIsBlack ? gameState.whiteStonesCaptured : gameState.blackStonesCaptured);
     scoreText = "Score: " + (!gameInfo.selfIsBlack ? gameState.blackStonesOnBoard + gameState.blackTerritorySize : gameState.whiteStonesOnBoard + gameState.whiteTerritorySize + 7.5);
 
-    arr.push(<Rect key={key+'info'} x={ix} y={iy} width={playerInfoWidthPx+2*paddingPx} height={playerInfoHeightPx+2*paddingPx} fill={'#A06800'} />);
-    arr.push(<Text key={key+'tn'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx} align={'left'} fontSize={playerFontSize-1} fontStyle={'bold'} text={nameText} />);
-    arr.push(<Text key={key+'tm'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + playerFontSize} align={'left'} fontSize={playerFontSize-1} text={moveText} />);
-    arr.push(<Text key={key+'tsob'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 2*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesOnBoardText} />);
-    arr.push(<Text key={key+'tsc'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 3*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesCapturedText} />);
-    arr.push(<Text key={key+'ts'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 4*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={scoreText} />);
+    let p2Arr = [];
+    ix = 0;
+    iy = 0;
+    p2Arr.push(<Rect key={key+'info'} x={ix} y={iy} width={playerInfoRectWidthPx} height={playerInfoRectHeightPx} fill={'#A06800'} />);
+    p2Arr.push(<Text key={key+'tn'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx} align={'left'} fontSize={playerFontSize-1} fontStyle={'bold'} text={nameText} />);
+    p2Arr.push(<Text key={key+'tm'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + playerFontSize} align={'left'} fontSize={playerFontSize-1} text={moveText} />);
+    p2Arr.push(<Text key={key+'tsob'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 2*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesOnBoardText} />);
+    p2Arr.push(<Text key={key+'tsc'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 3*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={stonesCapturedText} />);
+    p2Arr.push(<Text key={key+'ts'} x={ix + playerInfoHeightPx + 2*paddingPx} y={iy + paddingPx + 4*playerFontSize} align={'left'} fontSize={playerFontSize-1} text={scoreText} />);
     color = {true: '#505050', false: 'white'}[!gameInfo.selfIsBlack];
     gradientColor = {true: 'black', false: '#cccccc'}[!gameInfo.selfIsBlack];
     {
@@ -345,33 +352,47 @@ class Game extends React.Component {
         shadowColor: 'black',
         shadowOpacity: 0.2,
       };
-      arr.push(React.createElement('Circle', circleProps, null));
+      p2Arr.push(React.createElement('Circle', circleProps, null));
     }
 
     return (
       <div>
-        <Stage width={boardSizePx+spacingPx+playerInfoWidthPx} height={boardSizePx}>
-          <Layer>
-            {arr}
-          </Layer>
-        </Stage>
-      </div>
-    );
-  }
-
-  render() {
-    let gameInfo = this.state;
-    if (!gameInfo) return null;
-    let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
-    return (
-      <div>
-        <div className="button">
-          <button onClick={() => this.handlePassPress()} disabled={gameState.status || gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
-          <button onClick={() => this.handleUndoPress()} disabled={gameInfo.gameStates.length <= 1 || gameState.blackIsNext === gameInfo.selfIsBlack}>Undo</button>
-          <button onClick={() => this.handleShowHideTerritory()} hidden={gameState.status}>{gameInfo.showTerritory ? 'Hide' : 'Show'} territory</button>
+        <div style={{float: "left", width: boardSizePx, height: boardSizePx}}>
+          <Stage width={boardSizePx} height={boardSizePx}>
+            <Layer>
+              {arr}
+            </Layer>
+          </Stage>
         </div>
-        <div>
-          {this.renderBoard()}
+        <div style={{float: "left", width: spacingPx, height: boardSizePx}} />
+        <div style={{float: "left", width: playerInfoWidthPx, height: boardSizePx}}>
+          <div>
+            <div style={{width: playerInfoRectWidthPx, height: playerInfoRectHeightPx}}>
+              <Stage width={playerInfoRectWidthPx} height={playerInfoRectHeightPx}>
+                <Layer>
+                  {p1Arr}
+                </Layer>
+              </Stage>
+            </div>
+            <div className="buttons" style={{width: playerInfoRectWidthPx, height: boardSizePx-2*playerInfoRectHeightPx}}>
+              <table style={{width: playerInfoRectWidthPx, height: boardSizePx-2*playerInfoRectHeightPx}}>
+                <tr><td>
+                  <button onClick={() => this.handlePassPress()} disabled={gameState.status || gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
+                  <br/>
+                  <button onClick={() => this.handleUndoPress()} disabled={gameInfo.gameStates.length <= 1 || gameState.blackIsNext === gameInfo.selfIsBlack}>Undo</button>
+                  <br/>
+                  <button onClick={() => this.handleShowHideTerritory()} hidden={gameState.status}>{(gameInfo.showTerritory ? 'Hide' : 'Show') + ' territory'}</button>
+                </td></tr>
+              </table>
+            </div>
+            <div style={{width: playerInfoRectWidthPx, height: playerInfoRectHeightPx}}>
+              <Stage width={playerInfoRectWidthPx} height={playerInfoRectHeightPx}>
+                <Layer>
+                  {p2Arr}
+                </Layer>
+              </Stage>
+            </div>
+          </div>
         </div>
       </div>
     );

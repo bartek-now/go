@@ -394,7 +394,7 @@ class Game extends React.Component {
             <div className="buttons" style={{width: playerInfoRectWidthPx, height: boardSizePx-2*playerInfoRectHeightPx}}>
               <table style={{width: playerInfoRectWidthPx, height: boardSizePx-2*playerInfoRectHeightPx}}>
                 <tr><td>
-                  <button onClick={() => this.handlePassPress()} disabled={gameState.status || gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
+                  <button onClick={() => this.handlePassPress()} hidden={gameState.status} disabled={gameState.blackIsNext !== gameInfo.selfIsBlack}>Pass</button>
                   <br/>
                   <button onClick={() => this.handleUndoPress()} disabled={gameInfo.gameStates.length <= 1 || gameState.blackIsNext === gameInfo.selfIsBlack}>Undo</button>
                   <br/>

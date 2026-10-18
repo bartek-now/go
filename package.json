@@ -2,6 +2,7 @@
   "name": "go_server",
   "version": "1.0.0",
   "scripts": {
+    "test": "node --test test/*.test.cjs",
     "client-install": "npm install --prefix client",
     "start": "node server.js",
     "server": "nodemon server.js",    

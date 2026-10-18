@@ -8,14 +8,18 @@ function memoryPool(history) {
   return {
     state: JSON.stringify(history),
     writes: 0,
+    revision: 0,
     query(sql, params, callback) {
       if (sql.startsWith('SELECT state')) {
-        return Promise.resolve({rows: this.state === null ? [] : [{state: this.state}]});
+        return Promise.resolve({rows: this.state === null ? [] : [{state: this.state, revision: this.revision}]});
       }
       if (sql.startsWith('UPDATE Games')) {
+        assert.ok(sql.includes('WHERE id=$1::text AND revision=$3::int RETURNING revision'));
+        if (params[2] !== this.revision) return Promise.resolve({rowCount: 0, rows: []});
+        this.revision++;
         this.state = params[1];
         this.writes++;
-        const result = {rowCount: 1};
+        const result = {rowCount: 1, rows: [{revision: this.revision}]};
         if (callback) { callback(null, result); return; }
         return Promise.resolve(result);
       }
@@ -35,7 +39,7 @@ async function save(url, body) {
   return fetch(url + '/api/savegame/game', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(body)
+    body: JSON.stringify(Array.isArray(body) ? body : {revision: 0, ...body})
   });
 }
 
@@ -68,7 +72,7 @@ test('the server applies moves and undoes using its stored history', async t => 
   let response = await save(url, {action: {type: 'move', row: 2, col: 3}});
   assert.equal(response.status, 200);
   assert.equal((await response.json()).gameStates.at(-1).board[2][3], 1);
-  response = await save(url, {action: {type: 'undo'}});
+  response = await save(url, {revision: 1, action: {type: 'undo'}});
   assert.equal(response.status, 200);
   assert.equal((await response.json()).gameStates.length, 1);
 });
@@ -92,4 +96,64 @@ test('saving a missing game returns a JSON 404', async t => {
   const response = await save(url, {action: {type: 'pass'}});
   assert.equal(response.status, 404);
   assert.equal((await response.json()).message, 'Game not found');
+});
+
+
+test('concurrent actions from the same revision accept exactly one write', async t => {
+  const pool = memoryPool([moves.constructInitialState(9)]);
+  const originalQuery = pool.query.bind(pool);
+  const readers = [];
+  pool.query = (sql, params, callback) => {
+    if (sql.startsWith('SELECT state')) {
+      const snapshot = {rows: [{state: pool.state, revision: pool.revision}]};
+      return new Promise(resolve => {
+        readers.push(() => resolve(snapshot));
+        if (readers.length === 2) readers.forEach(reader => reader());
+      });
+    }
+    return originalQuery(sql, params, callback);
+  };
+  const url = await serve(t, pool);
+  const responses = await Promise.all([
+    save(url, {action: {type: 'move', row: 0, col: 0}}),
+    save(url, {action: {type: 'move', row: 1, col: 1}})
+  ]);
+  assert.deepEqual(responses.map(response => response.status).sort(), [200, 409]);
+  assert.equal(pool.writes, 1);
+  assert.equal(pool.revision, 1);
+  assert.equal(JSON.parse(pool.state).length, 2);
+});
+
+test('undo increments the revision and old requests cannot be replayed', async t => {
+  const pool = memoryPool([moves.constructInitialState(9)]);
+  const url = await serve(t, pool);
+  assert.equal((await save(url, {action: {type: 'move', row: 0, col: 0}})).status, 200);
+  const undo = await save(url, {revision: 1, action: {type: 'undo'}});
+  assert.equal(undo.status, 200);
+  assert.equal((await undo.json()).revision, 2);
+  assert.equal((await save(url, {revision: 0, action: {type: 'pass'}})).status, 409);
+  assert.equal(pool.writes, 2);
+  assert.equal(JSON.parse(pool.state).length, 1);
+});
+
+test('missing or invalid revisions are rejected before any write', async t => {
+  const pool = memoryPool([moves.constructInitialState(9)]);
+  const url = await serve(t, pool);
+  for (const revision of [undefined, -1, 0.5, '0']) {
+    assert.equal((await save(url, {revision, action: {type: 'pass'}})).status, 400);
+  }
+  assert.equal(pool.writes, 0);
+});
+
+
+test('loading a game includes its persisted revision', async t => {
+  const history = [moves.constructInitialState(9)];
+  const pool = {query(sql, params, callback) {
+    assert.ok(sql.includes('g.revision'));
+    callback(null, {rows: [{game_id: 'game', state: JSON.stringify(history), revision: 7, is_black: true, self_name: 'Black', opponent_name: 'White'}]});
+  }};
+  const url = await serve(t, pool);
+  const response = await fetch(url + '/api/loadgame/player');
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).revision, 7);
 });

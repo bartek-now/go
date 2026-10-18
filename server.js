@@ -44,24 +44,32 @@ function createApp(pool) {
     return result.rows[0] ? result.rows[0].revision : null;
   }
 
-  const insertNewGameIntoDb = (gameSeed, randState) => {
-    return new Promise(async function(resolve, reject) {
-      // TODO: Convert into transactions.
-      try {
-        await pool.query(
-            'INSERT INTO Games (id, state) VALUES ($1::text, $2::text)', [randState.gameId.toString(), JSON.stringify([gameSeed.gameState])]);
-        await pool.query(
-            'INSERT INTO GamePlayers (id, user_id, game_id, is_black) VALUES ($1::text, $2::text, $3::text, $4::bool)',
-            [randState.selfPlayerId.toString(), gameSeed.selfUserId, randState.gameId.toString(), randState.selfIsBlack]);
-        await pool.query(
+  const insertNewGameIntoDb = async (gameSeed, randState) => {
+    const client = await pool.connect();
+    let releaseError;
+    try {
+      await client.query('BEGIN');
+      await client.query(
+          'INSERT INTO Games (id, state) VALUES ($1::text, $2::text)',
+          [randState.gameId.toString(), JSON.stringify([gameSeed.gameState])]);
+      await client.query(
+          'INSERT INTO GamePlayers (id, user_id, game_id, is_black) VALUES ($1::text, $2::text, $3::text, $4::bool)',
+          [randState.selfPlayerId.toString(), gameSeed.selfUserId, randState.gameId.toString(), randState.selfIsBlack]);
+      await client.query(
           'INSERT INTO GamePlayers (id, user_id, game_id, is_black) VALUES ($1::text, $2::text, $3::text, $4::bool)',
           [randState.opponentPlayerId.toString(), gameSeed.opponentUserId, randState.gameId.toString(), !randState.selfIsBlack]);
-        } catch(error) {
-        reject(error)
-        return;
+      await client.query('COMMIT');
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        // Discard a connection whose transaction could not be cleaned up.
+        releaseError = rollbackError;
       }
-      resolve();
-    });
+      throw error;
+    } finally {
+      client.release(releaseError);
+    }
   }
 
   const loadUserFromDb = (userLogin) => {

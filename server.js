@@ -12,7 +12,7 @@ function createApp(pool) {
   const loadGameFromDb = (playerId) => {
     return new Promise(function(resolve, reject) {
       pool.query(
-          'SELECT g.id AS game_id,g.state,p1.is_black,u1.name AS self_name,u2.name AS opponent_name '
+          'SELECT g.id AS game_id,g.state,g.revision,p1.is_black,u1.name AS self_name,u2.name AS opponent_name '
               + 'FROM Games g,GamePlayers p1,GamePlayers p2,Users u1, Users u2 '
               + 'WHERE p1.id=$1::text AND p1.game_id=g.id AND p1.game_id=p2.game_id AND p1.user_id<>p2.user_id AND p1.user_id=u1.id AND p2.user_id=u2.id',
           [playerId],
@@ -28,6 +28,7 @@ function createApp(pool) {
         resolve({
           gameId: result.rows[0].game_id,
           gameStates: JSON.parse(result.rows[0].state),
+          revision: result.rows[0].revision,
           selfIsBlack: result.rows[0].is_black,
           selfName:  result.rows[0].self_name,
           opponentName:  result.rows[0].opponent_name,
@@ -36,19 +37,11 @@ function createApp(pool) {
     });
   }
 
-  const saveGameToDb = (gameId, gameStates) => {
-    return new Promise(function(resolve, reject) {
-      pool.query(
-          'UPDATE Games SET state=$2::text WHERE id=$1::text',
-          [gameId, JSON.stringify(gameStates)],
-          error => {
-        if (error) {
-          reject(error)
-          return;
-        }
-        resolve();
-      });
-    });
+  const saveGameToDb = async (gameId, gameStates, revision) => {
+    const result = await pool.query(
+        'UPDATE Games SET state=$2::text, revision=revision+1 WHERE id=$1::text AND revision=$3::int RETURNING revision',
+        [gameId, JSON.stringify(gameStates), revision]);
+    return result.rows[0] ? result.rows[0].revision : null;
   }
 
   const insertNewGameIntoDb = (gameSeed, randState) => {
@@ -156,17 +149,26 @@ function createApp(pool) {
   });
 
   app.post('/api/savegame/:gameId', async (req, res) => {
+    if (!Number.isInteger(req.body.revision) || req.body.revision < 0) {
+      return res.status(400).send({message: 'A non-negative game revision is required'});
+    }
     try {
-      const result = await pool.query('SELECT state FROM Games WHERE id=$1::text', [req.params.gameId]);
+      const result = await pool.query('SELECT state,revision FROM Games WHERE id=$1::text', [req.params.gameId]);
       if (!result.rows[0]) return res.status(404).send({message: 'Game not found'});
+      if (result.rows[0].revision !== req.body.revision) {
+        return res.status(409).send({message: 'The game changed; reload before trying again'});
+      }
       const gameStates = JSON.parse(result.rows[0].state);
       try {
         applyAction(gameStates, req.body.action);
       } catch (error) {
         return res.status(400).send({message: error.message});
       }
-      await saveGameToDb(req.params.gameId, gameStates);
-      res.send({gameStates});
+      const revision = await saveGameToDb(req.params.gameId, gameStates, req.body.revision);
+      if (revision === null) {
+        return res.status(409).send({message: 'The game changed; reload before trying again'});
+      }
+      res.send({gameStates, revision});
     } catch (error) {
       console.error('Failed to save game:', error);
       res.status(500).send({message: 'Could not save the game'});

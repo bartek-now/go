@@ -33,7 +33,7 @@ const saveGame = async (gameInfo, action) => {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({action}),
+    body: JSON.stringify({action, revision: gameInfo.revision}),
   });
   const body = await response.json();
   if (response.status !== 200)
@@ -97,7 +97,7 @@ class Game extends React.Component {
 
   persistState(gameInfo, action) {
     this.setState(gameInfo);
-    saveGame(gameInfo, action);
+    saveGame(gameInfo, action).then(saved => this.setState(saved));
   }
 
   handleFieldClick(row, col) {

@@ -2,6 +2,7 @@ import * as moves from './moves';
 import React from 'react';
 import {Circle, Layer, Line, Rect, Stage, Text} from 'react-konva';
 import {loadGame, saveGame} from './api';
+import {startPolling} from './polling';
 
 const millisToHHMMSS = (millis) => {
   let secs = Math.floor(millis / 1000);
@@ -17,27 +18,58 @@ const millisToHHMMSS = (millis) => {
 export default class Game extends React.Component {
   constructor(props) {
     super(props);
-    this.continuouslyLoadGame();
-    this.continuouslyRefresh();
+    this.state = {isLoading: true};
+    this.requestGeneration = 0;
   }
 
-  continuouslyLoadGame() {
-    loadGame(this.props.match.params.playerId)
-        .then(gameInfo => {
-          if (!this.savePending) {
+  componentDidMount() {
+    this.startGame();
+  }
+
+  componentDidUpdate(previousProps) {
+    if (previousProps.match.params.playerId !== this.props.match.params.playerId) {
+      this.stopGame();
+      this.startGame();
+    }
+  }
+
+  componentWillUnmount() {
+    this.stopGame();
+  }
+
+  startGame() {
+    this.active = true;
+    this.requestGeneration++;
+    this.savePending = false;
+    this.reloadPending = false;
+    this.needsReload = false;
+    this.setState({gameId: null, gameStates: null, revision: null, isLoading: true,
+      isSaving: false, needsReload: false, saveError: null, loadError: null});
+    const playerId = this.props.match.params.playerId;
+    this.stopPolling = startPolling(
+        signal => loadGame(playerId, {signal}),
+        gameInfo => {
+          if (!this.savePending && !this.reloadPending) {
             this.initializeStateFromDb(gameInfo, this.needsReload);
             this.needsReload = false;
-            this.setState({needsReload: false});
+            this.setState({needsReload: false, loadError: null});
           }
-          setTimeout(() => this.continuouslyLoadGame(), 1500);
-        })
-        .catch(reason => alert('Failed to load the game from DB: ' + reason));
+        },
+        error => this.setState({loadError: 'Could not refresh the game: ' + error.message}));
+    this.refreshTimer = setInterval(() => this.forceUpdate(), 500);
   }
 
-  continuouslyRefresh() {
-    // Reload state to trigger re-draw, to update elapsed time.
-    if (this.state) this.setState(this.state);
-    setTimeout(() => this.continuouslyRefresh(), 500);
+  stopGame() {
+    this.active = false;
+    this.requestGeneration++;
+    if (this.stopPolling) this.stopPolling();
+    clearInterval(this.refreshTimer);
+    if (this.saveController) this.saveController.abort();
+    if (this.reloadController) this.reloadController.abort();
+  }
+
+  isCurrentRequest(generation) {
+    return this.active && generation === this.requestGeneration;
   }
 
   initializeStateFromDb(gameInfo, force = false) {
@@ -45,43 +77,57 @@ export default class Game extends React.Component {
       if (!current || gameInfo.gameId !== current.gameId
           || gameInfo.revision > current.revision
           || (force && gameInfo.revision === current.revision)) {
-        return gameInfo;
+        return {...gameInfo, isLoading: false, loadError: null};
       }
       return null;
     });
   }
 
   async persistAction(action) {
-    if (this.savePending || this.needsReload || !this.state) return;
+    if (!this.active || this.savePending || this.needsReload || this.state.isLoading) return;
     this.savePending = true;
     const gameInfo = this.state;
+    const generation = this.requestGeneration;
+    this.saveController = new AbortController();
     this.setState({isSaving: true, saveError: null});
     try {
-      const saved = await saveGame(gameInfo, action);
+      const saved = await saveGame(gameInfo, action, {signal: this.saveController.signal});
+      if (!this.isCurrentRequest(generation)) return;
       this.initializeStateFromDb({gameId: gameInfo.gameId, ...saved});
     } catch (error) {
+      if (!this.isCurrentRequest(generation)) return;
       this.needsReload = true;
       this.setState({needsReload: true, saveError: 'Could not confirm the save: ' + error.message});
       await this.recoverGame();
     } finally {
-      this.savePending = false;
-      this.setState({isSaving: false});
+      if (this.isCurrentRequest(generation)) {
+        this.savePending = false;
+        this.saveController = null;
+        this.setState({isSaving: false});
+      }
     }
   }
 
   async recoverGame() {
-    if (this.reloadPending) return;
+    if (!this.active || this.reloadPending) return;
+    const generation = this.requestGeneration;
     this.reloadPending = true;
+    this.reloadController = new AbortController();
     try {
-      const gameInfo = await loadGame(this.props.match.params.playerId);
+      const gameInfo = await loadGame(this.props.match.params.playerId, {signal: this.reloadController.signal});
+      if (!this.isCurrentRequest(generation)) return;
       this.initializeStateFromDb(gameInfo, true);
       this.needsReload = false;
       this.setState({needsReload: false});
     } catch (error) {
+      if (!this.isCurrentRequest(generation)) return;
       this.needsReload = true;
       this.setState({needsReload: true, saveError: 'Could not reload the game. Retry loading before playing: ' + error.message});
     } finally {
-      this.reloadPending = false;
+      if (this.isCurrentRequest(generation)) {
+        this.reloadPending = false;
+        this.reloadController = null;
+      }
     }
   }
 
@@ -135,7 +181,11 @@ export default class Game extends React.Component {
 
   render() {
     let gameInfo = this.state;
-    if (!gameInfo) return null;
+    if (!gameInfo || gameInfo.isLoading) {
+      return gameInfo && gameInfo.loadError
+          ? <div role="alert">{gameInfo.loadError}</div>
+          : <div role="status">Loading game...</div>;
+    }
 
     let gameState = gameInfo.gameStates[gameInfo.gameStates.length - 1];
     let size = gameState.size;
@@ -342,6 +392,7 @@ export default class Game extends React.Component {
       <div>
         {gameInfo.isSaving && <div role="status">Saving...</div>}
         {gameInfo.saveError && <div role="alert">{gameInfo.saveError}</div>}
+        {gameInfo.loadError && <div role="alert">{gameInfo.loadError}</div>}
         {gameInfo.needsReload && <button onClick={() => this.recoverGame()}>Retry loading</button>}
         <div style={{float: "left", width: boardSizePx, height: boardSizePx}}>
           <Stage width={boardSizePx} height={boardSizePx}>

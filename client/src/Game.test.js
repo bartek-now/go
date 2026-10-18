@@ -135,3 +135,85 @@ test('a different game can start at a lower revision', async () => {
   expect(game.state.gameId).toBe('other');
   expect(game.state.revision).toBe(0);
 });
+
+
+test('unmount stops polling, aborts its request, and clears the refresh timer', async () => {
+  const {game, unmount} = await mountGame();
+  const signal = loadGame.mock.calls[0][1].signal;
+  const refresh = jest.spyOn(game, 'forceUpdate');
+  unmount();
+  expect(signal.aborted).toBe(true);
+  jest.advanceTimersByTime(10000);
+  expect(loadGame).toHaveBeenCalledTimes(1);
+  expect(refresh).not.toHaveBeenCalled();
+});
+
+test('a late initial load cannot update an unmounted component', async () => {
+  let resolveLoad;
+  loadGame.mockReturnValue(new Promise(resolve => { resolveLoad = resolve; }));
+  const ref = React.createRef();
+  const view = render(<Game ref={ref} match={{params: {playerId: 'old'}}} />);
+  const setState = jest.spyOn(ref.current, 'setState');
+  view.unmount();
+  await act(async () => { resolveLoad(initialGame()); });
+  expect(setState).not.toHaveBeenCalled();
+});
+
+test('route changes abort the old load and ignore its late response', async () => {
+  let resolveOld;
+  loadGame.mockImplementation(playerId => playerId === 'old'
+      ? new Promise(resolve => { resolveOld = resolve; })
+      : Promise.resolve({...initialGame(), gameId: 'new'}));
+  const ref = React.createRef();
+  const view = render(<Game ref={ref} match={{params: {playerId: 'old'}}} />);
+  const oldSignal = loadGame.mock.calls[0][1].signal;
+  await act(async () => { view.rerender(<Game ref={ref} match={{params: {playerId: 'new'}}} />); });
+  expect(oldSignal.aborted).toBe(true);
+  expect(ref.current.state.gameId).toBe('new');
+  await act(async () => { resolveOld({...initialGame(), revision: 100}); });
+  expect(ref.current.state.gameId).toBe('new');
+  expect(ref.current.state.revision).toBe(0);
+});
+
+test.each([true, false])('a save finishing after a route change cannot affect the next game (%s)', async succeeds => {
+  const {game, rerender} = await mountGame();
+  let finishSave;
+  saveGame.mockReturnValue(new Promise((resolve, reject) => {
+    finishSave = () => succeeds ? resolve({revision: 10, gameStates: initialGame().gameStates}) : reject(Error('old failure'));
+  }));
+  let pending;
+  act(() => { pending = game.handlePassPress(); });
+  const signal = saveGame.mock.calls[0][2].signal;
+  loadGame.mockResolvedValue({...initialGame(), gameId: 'new'});
+  await act(async () => { rerender(<Game match={{params: {playerId: 'new'}}} />); });
+  expect(signal.aborted).toBe(true);
+  await act(async () => { finishSave(); await pending; });
+  expect(game.state.gameId).toBe('new');
+  expect(game.state.revision).toBe(0);
+  expect(game.state.isSaving).toBe(false);
+  expect(loadGame).toHaveBeenCalledTimes(2);
+});
+
+test('an aborted recovery does not update an unmounted component', async () => {
+  const {game, unmount} = await mountGame();
+  let rejectReload;
+  loadGame.mockReturnValue(new Promise((resolve, reject) => { rejectReload = reject; }));
+  let recovery;
+  act(() => { recovery = game.recoverGame(); });
+  const signal = loadGame.mock.calls[1][1].signal;
+  const setState = jest.spyOn(game, 'setState');
+  unmount();
+  expect(signal.aborted).toBe(true);
+  await act(async () => { rejectReload(Error('aborted')); await recovery; });
+  expect(setState).not.toHaveBeenCalled();
+});
+
+test('an initial load failure recovers on the next polling interval', async () => {
+  loadGame.mockRejectedValueOnce(Error('offline')).mockResolvedValue(initialGame());
+  let view;
+  await act(async () => { view = render(<Game match={{params: {playerId: 'player'}}} />); });
+  expect(view.getByRole('alert')).toHaveTextContent('offline');
+  await act(async () => { jest.advanceTimersByTime(1500); });
+  expect(view.queryByRole('alert')).toBeNull();
+  expect(view.getByText('Pass')).not.toBeDisabled();
+});

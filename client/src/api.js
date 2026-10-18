@@ -11,20 +11,21 @@ async function readResponse(response) {
   return body;
 }
 
-export const loadUser = async (userLogin) => {
-  const response = await fetch('/api/loaduser/' + userLogin);
+export const loadUser = async (userLogin, options = {}) => {
+  const response = await fetch('/api/loaduser/' + userLogin, options);
   const body = await readResponse(response);
   return body;
 }
 
-export const loadGame = async (playerId) => {
-  const response = await fetch('/api/loadgame/' + playerId);
+export const loadGame = async (playerId, options = {}) => {
+  const response = await fetch('/api/loadgame/' + playerId, options);
   const body = await readResponse(response);
   return body;
 }
 
-export const saveGame = async (gameInfo, action) => {
+export const saveGame = async (gameInfo, action, options = {}) => {
   const response = await fetch('/api/savegame/' + gameInfo.gameId, {
+    ...options,
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

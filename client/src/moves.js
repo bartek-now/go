@@ -1,5 +1,5 @@
 
-export function constructInitialState(size) {
+function constructInitialState(size) {
     return {
         size: size,
         board: [],
@@ -18,7 +18,7 @@ export function constructInitialState(size) {
     };
 }
 
-export function getField(board, row, col) {
+function getField(board, row, col) {
     // If row is undefined/null, assume all its fields are 0.
     return !board[row] ? 0 : (!board[row][col] ? 0 : board[row][col]);
 }
@@ -115,7 +115,7 @@ function traverseEmpty(size, board, visitState, row, col, first=true) {
 }
 
 // Export for testing.
-export function markEmptyTerritory(size, board) {
+function markEmptyTerritory(size, board) {
     let blackTerritory = [];
     let whiteTerritory = [];
     for (let i = 0; i < size; ++i) {
@@ -158,7 +158,7 @@ function boardsAreEqual(size, board1, board2) {
 
 // Returns an object that either has a new |board| (and independent copy of the input board, with
 // the move applied), or |error|.
-export function makeMove(gameStates, row, col) {
+function makeMove(gameStates, row, col) {
     let state = gameStates[gameStates.length - 1];
     if (state.status) {
         throw Error("game has ended");
@@ -166,6 +166,10 @@ export function makeMove(gameStates, row, col) {
 
     let board = state.board;
     let size = state.size;
+    if (!Number.isInteger(row) || !Number.isInteger(col)
+        || row < 0 || row >= size || col < 0 || col >= size) {
+        throw Error("field is outside the board");
+    }
     if (getField(board, row, col)) throw Error("field is already occupied");
 
     // Use a JSON trick to make a deep copy of the board, before modifying it.
@@ -226,7 +230,7 @@ export function makeMove(gameStates, row, col) {
     gameStates.push(newState);
 }
 
-export function pass(gameStates) {
+function pass(gameStates) {
     let state = gameStates[gameStates.length - 1];
     if (state.status) {
         throw Error("game has ended");
@@ -257,7 +261,7 @@ export function pass(gameStates) {
     gameStates.push(newState);
 }
 
-export function undo(gameStates) {
+function undo(gameStates) {
     if (gameStates.length <= 1) {
         throw Error("at the beginning of the game");
     }
@@ -268,3 +272,6 @@ export function undo(gameStates) {
     // thoroughly).
     gameStates[gameStates.length - 1].timestamp = Date.now();
 }
+
+// Share the same rules between the browser and the server.
+module.exports = {constructInitialState, getField, markEmptyTerritory, makeMove, pass, undo};

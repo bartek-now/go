@@ -27,17 +27,18 @@ const loadGame = async (playerId) => {
   return body;
 }
 
-const saveGame = async (gameInfo) => {
+const saveGame = async (gameInfo, action) => {
   const response = await fetch('/api/savegame/' + gameInfo.gameId, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(gameInfo.gameStates),
+    body: JSON.stringify({action}),
   });
   const body = await response.json();
   if (response.status !== 200)
     throw Error('Received status ' + response.status + ': ' + body.message);
+  return body;
 }
 
 const saveFreshGame = async (gameSeed) => {
@@ -94,9 +95,9 @@ class Game extends React.Component {
     }
   }
 
-  persistState(gameInfo) {
+  persistState(gameInfo, action) {
     this.setState(gameInfo);
-    saveGame(gameInfo);
+    saveGame(gameInfo, action);
   }
 
   handleFieldClick(row, col) {
@@ -107,7 +108,7 @@ class Game extends React.Component {
       alert("Can't make the move: " + err.message);
       return;
     }
-    this.persistState(gameInfo);
+    this.persistState(gameInfo, {type: 'move', row, col});
   }
 
   handlePassPress() {
@@ -118,7 +119,7 @@ class Game extends React.Component {
       alert("Can't pass: " + err.message);
       return;
     }
-    this.persistState(gameInfo);
+    this.persistState(gameInfo, {type: 'pass'});
   }
 
   handleUndoPress() {
@@ -129,7 +130,7 @@ class Game extends React.Component {
       alert("Can't undo the move: " + err.message);
       return;
     }
-    this.persistState(gameInfo);
+    this.persistState(gameInfo, {type: 'undo'});
   }
 
   handleShowHideTerritory() {

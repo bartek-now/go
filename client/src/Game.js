@@ -41,11 +41,14 @@ export default class Game extends React.Component {
   }
 
   initializeStateFromDb(gameInfo, force = false) {
-    if (force || !this.state
-        || gameInfo.gameStates[gameInfo.gameStates.length - 1].timestamp
-            > this.state.gameStates[this.state.gameStates.length - 1].timestamp) {
-      this.setState(gameInfo);
-    }
+    this.setState(current => {
+      if (!current || gameInfo.gameId !== current.gameId
+          || gameInfo.revision > current.revision
+          || (force && gameInfo.revision === current.revision)) {
+        return gameInfo;
+      }
+      return null;
+    });
   }
 
   async persistAction(action) {
@@ -55,7 +58,7 @@ export default class Game extends React.Component {
     this.setState({isSaving: true, saveError: null});
     try {
       const saved = await saveGame(gameInfo, action);
-      this.setState(saved);
+      this.initializeStateFromDb({gameId: gameInfo.gameId, ...saved});
     } catch (error) {
       this.needsReload = true;
       this.setState({needsReload: true, saveError: 'Could not confirm the save: ' + error.message});

@@ -88,3 +88,50 @@ test('if save and reload both fail, playing stays blocked until a successful ret
   await act(async () => { fireEvent.click(getByText('Retry loading')); });
   expect(getByText('Pass')).not.toBeDisabled();
 });
+
+
+test.each([0, -10000])('a higher revision is accepted even with an equal or older timestamp (%i)', async offset => {
+  const {game, gameInfo} = await mountGame();
+  const next = {...initialGame(), revision: 1};
+  next.gameStates[0].timestamp = gameInfo.gameStates[0].timestamp + offset;
+  act(() => { game.initializeStateFromDb(next); });
+  expect(game.state.revision).toBe(1);
+  expect(game.state.gameStates).toEqual(next.gameStates);
+});
+
+test('an older revision cannot overwrite a newer one even with a future timestamp', async () => {
+  const initial = {...initialGame(), revision: 3};
+  const {game} = await mountGame(initial);
+  const stale = {...initialGame(), revision: 2};
+  stale.gameStates[0].timestamp = initial.gameStates[0].timestamp + 100000;
+  act(() => { game.initializeStateFromDb(stale, true); });
+  expect(game.state.revision).toBe(3);
+  expect(game.state.gameStates).toEqual(initial.gameStates);
+});
+
+test('batched out-of-order responses compare against the latest queued revision', async () => {
+  const {game} = await mountGame();
+  act(() => {
+    game.initializeStateFromDb({...initialGame(), revision: 2});
+    game.initializeStateFromDb({...initialGame(), revision: 1});
+  });
+  expect(game.state.revision).toBe(2);
+});
+
+test('a higher-revision undo is accepted despite having a shorter history', async () => {
+  const initial = initialGame();
+  moves.makeMove(initial.gameStates, 0, 0);
+  initial.revision = 1;
+  const {game} = await mountGame(initial);
+  const undone = {...initialGame(), revision: 2};
+  act(() => { game.initializeStateFromDb(undone); });
+  expect(game.state.gameStates).toHaveLength(1);
+  expect(game.state.revision).toBe(2);
+});
+
+test('a different game can start at a lower revision', async () => {
+  const {game} = await mountGame({...initialGame(), revision: 10});
+  act(() => { game.initializeStateFromDb({...initialGame(), gameId: 'other', revision: 0}); });
+  expect(game.state.gameId).toBe('other');
+  expect(game.state.revision).toBe(0);
+});

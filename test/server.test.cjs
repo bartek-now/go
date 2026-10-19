@@ -157,3 +157,115 @@ test('loading a game includes its persisted revision', async t => {
   assert.equal(response.status, 200);
   assert.equal((await response.json()).revision, 7);
 });
+
+
+function transactionPool({failInsert = 0, failBegin = false, failCommit = false, failRollback = false, commitGate} = {}) {
+  let inserts = 0;
+  let staged = [];
+  const pool = {
+    committed: [], calls: [], releases: [], connects: 0,
+    query() { throw Error('Transaction queries must use the checked-out client'); },
+    async connect() { this.connects++; return client; }
+  };
+  const client = {
+    async query(sql, params) {
+      pool.calls.push({sql, params});
+      if (sql === 'BEGIN') {
+        if (failBegin) throw Error('begin failed');
+        staged = [];
+      } else if (sql.startsWith('INSERT')) {
+        inserts++;
+        if (inserts === failInsert) throw Error('insert failed');
+        staged.push({sql, params});
+      } else if (sql === 'COMMIT') {
+        if (commitGate) await commitGate();
+        if (failCommit) throw Error('commit failed');
+        pool.committed.push(...staged);
+        staged = [];
+      } else if (sql === 'ROLLBACK') {
+        if (failRollback) throw Error('rollback failed');
+        staged = [];
+      } else throw Error('Unexpected client query');
+      return {rows: [], rowCount: 1};
+    },
+    release(error) { pool.releases.push(error); }
+  };
+  return pool;
+}
+
+function createGame(url) {
+  return fetch(url + '/api/newgame/', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({selfUserId: 'one', opponentUserId: 'two', gameState: moves.constructInitialState(9)})
+  });
+}
+
+test('new games commit all three records on one connection before responding', async t => {
+  let notifyCommit;
+  let finishCommit;
+  const reachedCommit = new Promise(resolve => { notifyCommit = resolve; });
+  const gate = new Promise(resolve => { finishCommit = resolve; });
+  const pool = transactionPool({commitGate: () => { notifyCommit(); return gate; }});
+  const url = await serve(t, pool);
+  let responded = false;
+  const pending = createGame(url).then(response => { responded = true; return response; });
+  await reachedCommit;
+  assert.equal(responded, false);
+  assert.equal(pool.committed.length, 0);
+  finishCommit();
+  const response = await pending;
+  assert.equal(response.status, 200);
+  assert.equal(typeof (await response.json()).playerId, 'number');
+  assert.equal(pool.connects, 1);
+  assert.deepEqual(pool.calls.map(call => call.sql.split(' ')[0]), ['BEGIN', 'INSERT', 'INSERT', 'INSERT', 'COMMIT']);
+  assert.equal(pool.committed.length, 3);
+  const [, self, opponent] = pool.committed;
+  assert.equal(self.params[1], 'one');
+  assert.equal(opponent.params[1], 'two');
+  assert.equal(self.params[2], opponent.params[2]);
+  assert.equal(self.params[3], !opponent.params[3]);
+  assert.deepEqual(pool.releases, [undefined]);
+});
+
+for (const failInsert of [1, 2, 3]) {
+  test('insert failure ' + failInsert + ' rolls back without partial game records', async t => {
+    const pool = transactionPool({failInsert});
+    const url = await serve(t, pool);
+    const response = await createGame(url);
+    assert.equal(response.status, 500);
+    assert.match((await response.json()).message, /insert failed/);
+    assert.equal(pool.committed.length, 0);
+    assert.equal(pool.calls.at(-1).sql, 'ROLLBACK');
+    assert.equal(pool.calls.some(call => call.sql === 'COMMIT'), false);
+    assert.deepEqual(pool.releases, [undefined]);
+  });
+}
+
+for (const phase of ['Begin', 'Commit']) {
+  test(phase + ' failure also rolls back and releases the connection', async t => {
+    const pool = transactionPool({['fail' + phase]: true});
+    const url = await serve(t, pool);
+    assert.equal((await createGame(url)).status, 500);
+    assert.equal(pool.committed.length, 0);
+    assert.equal(pool.calls.at(-1).sql, 'ROLLBACK');
+    assert.deepEqual(pool.releases, [undefined]);
+  });
+}
+
+test('rollback failure discards the connection and preserves the original error', async t => {
+  const pool = transactionPool({failInsert: 3, failRollback: true});
+  const url = await serve(t, pool);
+  const response = await createGame(url);
+  assert.equal(response.status, 500);
+  assert.match((await response.json()).message, /insert failed/);
+  assert.equal(pool.releases.length, 1);
+  assert.match(pool.releases[0].message, /rollback failed/);
+});
+
+test('failure to acquire a database connection returns an error response', async t => {
+  const pool = {async connect() { throw Error('connection failed'); }};
+  const url = await serve(t, pool);
+  const response = await createGame(url);
+  assert.equal(response.status, 500);
+  assert.match((await response.json()).message, /connection failed/);
+});

@@ -1,4 +1,4 @@
-import {saveGame} from './api';
+import {loadGame, loadUser, saveGame} from './api';
 
 const originalFetch = global.fetch;
 afterEach(() => { global.fetch = originalFetch; });
@@ -19,4 +19,19 @@ test('JSON server errors reject with a useful message', async () => {
 test('non-JSON error responses also reject so the UI can recover', async () => {
   global.fetch = jest.fn().mockResolvedValue({status: 502, json: async () => { throw Error('Unexpected token'); }});
   await expect(saveGame({gameId: 'game', revision: 0}, {type: 'pass'})).rejects.toThrow('Received status 502');
+});
+
+
+test.each([loadGame, loadUser])('GET requests pass cancellation signals to fetch', async load => {
+  global.fetch = jest.fn().mockResolvedValue({status: 200, json: async () => ({})});
+  const controller = new AbortController();
+  await load('id', {signal: controller.signal});
+  expect(global.fetch.mock.calls[0][1].signal).toBe(controller.signal);
+});
+
+test('save requests pass cancellation signals to fetch', async () => {
+  global.fetch = jest.fn().mockResolvedValue({status: 200, json: async () => ({})});
+  const controller = new AbortController();
+  await saveGame({gameId: 'game', revision: 0}, {type: 'pass'}, {signal: controller.signal});
+  expect(global.fetch.mock.calls[0][1].signal).toBe(controller.signal);
 });
